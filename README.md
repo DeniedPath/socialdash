@@ -23,6 +23,10 @@ pnpm dev
 
 Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
+## 🧬 Database
+- GitHub repo includes schema files matching the [Entity Relationship Diagram (ERD)] and database structure.
+- Models include Users, Posts, Reports, Notifications, and SocialAccounts with validation and indexing.
+
 ## 📁 Project Structure
 - `app/` - Main App Router structure
 - `components/` - Reusable UI components
