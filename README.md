@@ -1,7 +1,16 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Social Media Dashboard
 
-## Getting Started
+This is a full-stack **Next.js** web application for managing and analyzing social media performance. It features real-time analytics, AI-powered insights, interactive charts, and multi-platform integration (Instagram, Twitter, Facebook, LinkedIn).
 
+## 🧰 Tech Stack
+- **Frontend**: Next.js (App Router), Tailwind CSS, React
+- **Backend**: Node.js, Express.js
+- **Database**: MongoDB
+- **Auth**: NextAuth.js
+- **AI**: OpenAI API
+- **Deployment**: Vercel
+
+## 🚀 Getting Started
 First, run the development server:
 
 ```bash
@@ -10,27 +19,32 @@ npm run dev
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🧬 Database
+- GitHub repo includes schema files matching the [Entity Relationship Diagram (ERD)] and database structure.
+- Models include Users, Posts, Reports, Notifications, and SocialAccounts with validation and indexing.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📁 Project Structure
+- `app/` - Main App Router structure
+- `components/` - Reusable UI components
+- `lib/` - Utility functions and API helpers
+- `models/` - Mongoose schema definitions
 
-## Learn More
+## 🛠 Features
+- Multi-platform account integration
+- Real-time metrics (followers, likes, shares)
+- AI-based content suggestions
+- User authentication and profile management
+- Responsive dashboard with charts and filters
 
-To learn more about Next.js, take a look at the following resources:
+## 📦 Deployment
+This app is ready to deploy on [Vercel](https://vercel.com/). See the [deployment docs](https://nextjs.org/docs/app/building-your-application/deploying) for setup instructions.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📚 Learn More
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+- [MongoDB Docs](https://www.mongodb.com/docs/)
+- [OpenAI API Docs](https://platform.openai.com/docs)
