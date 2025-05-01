@@ -1,0 +1,10 @@
+{
+  "_id": "ObjectId",
+  "name": "String",
+  "email": "string",
+  "passwordHash": "string",
+  "role": "String",
+  "connectedAccounts": ["Object"],
+  "createdAt": "Date",
+  "updatedAt": "Date"
+}

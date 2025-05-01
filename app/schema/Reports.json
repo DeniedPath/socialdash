@@ -1,0 +1,8 @@
+{
+  "_id": "ObjectId",
+  "userId": "ObjectId",
+  "title": "String",
+  "reportType": "String",
+  "generatedData": "Object",
+  "createdAt": "Date"
+}

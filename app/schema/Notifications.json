@@ -1,0 +1,8 @@
+{
+  "_id": "ObjectId",
+  "userId": "ObjectId",
+  "type": "String",
+  "message": "String",
+  "seen": "Boolean",
+  "createdAt": "Date"
+}
