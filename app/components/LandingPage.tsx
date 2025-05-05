@@ -15,12 +15,12 @@ export default function LandingPage() {
                 </p>
 
                 <div className="flex justify-center gap-4 mb-14">
-                    <Link href="/auth/login">
+                    <Link href="/pages/signup">
             <span className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full text-lg shadow-md transition">
               Get Started Free
             </span>
                     </Link>
-                    <Link href="/about">
+                    <Link href="/pages/about">
             <span className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-8 rounded-full text-lg shadow-md transition">
               Learn More
             </span>

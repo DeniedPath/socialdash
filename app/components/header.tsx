@@ -15,7 +15,7 @@ export default function Header() {
                     <Link href="/about">
                         <span className="hover:text-blue-600 transition cursor-pointer">About</span>
                     </Link>
-                    <Link href="/auth/login">
+                    <Link href="/login">
                         <span className="hover:text-blue-600 transition cursor-pointer">Login</span>
                     </Link>
                 </nav>
