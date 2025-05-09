@@ -15,7 +15,7 @@ export default function LandingPage() {
                 </p>
 
                 <div className="flex justify-center gap-4 mb-14">
-                    <Link href="/pages/signup">
+                    <Link href="/login">
             <span className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full text-lg shadow-md transition">
               Get Started Free
             </span>
