@@ -1,0 +1,53 @@
+{
+    "youtube": {
+        "stats": {
+            "subscriberCount": "36",
+            "viewCount": "320",
+            "videoCount": "13",
+            "subscriberChange": "0 last 30 days",
+            "subscriberChangeType": "neutral"
+        },
+        "timeSeriesData": [
+            { "name": "Jan '24", "views": 15000, "likes": 750, "subscribers": 200 },
+            { "name": "Feb '24", "views": 18000, "likes": 820, "subscribers": 250 },
+            { "name": "Mar '24", "views": 16500, "likes": 790, "subscribers": 220 },
+            { "name": "Apr '24", "views": 21000, "likes": 950, "subscribers": 310 },
+            { "name": "May '24", "views": 19500, "likes": 900, "subscribers": 280 }
+        ],
+        "trafficSources": [
+            { "name": "YouTube Search", "value": 55, "color": "#FF0000" },
+            { "name": "Suggested Videos", "value": 25, "color": "#FF5733" },
+            { "name": "Browse Features", "value": 10, "color": "#FFC300" },
+            { "name": "External", "value": 5, "color": "#DAF7A6" },
+            { "name": "Playlists", "value": 5, "color": "#900C3F" }
+        ],
+        "recentActivity": [
+            { "id": "yt1", "type": "New Subscriber", "content": "ChannelLover123 subscribed.", "time": "1h ago", "iconName": "Users" },
+            { "id": "yt2", "type": "Video Liked", "content": "'My Latest Vlog' got a new like.", "time": "3h ago", "iconName": "Target" }
+        ],
+        "topContent": [
+            { "id": "vid1", "title": "My Most Epic Vlog Ever!", "views": "55.2K", "engagementRate": "22%" },
+            { "id": "vid2", "title": "Tutorial: Advanced Editing", "views": "30.1K", "engagementRate": "18%" }
+        ]
+    },
+    "twitter": {
+        "stats": {
+            "followerCount": "10,500",
+            "likeCount": "5,200",
+            "subscriberChange": "+50 last 7 days",
+            "subscriberChangeType": "positive"
+        },
+        "timeSeriesData": [
+            { "name": "Mon", "impressions": 2000, "engagements": 150 },
+            { "name": "Tue", "impressions": 2200, "engagements": 180 },
+            { "name": "Wed", "impressions": 1900, "engagements": 140 }
+        ],
+        "trafficSources": [],
+        "recentActivity": [
+            { "id": "tw1", "type": "New Follower", "content": "TechGuru followed you.", "time": "30m ago", "iconName": "Users" }
+        ],
+        "topContent": [
+            { "id": "tweet1", "title": "Quick update on #NextJS features...", "views": "10K", "engagementRate": "5%" }
+        ]
+    }
+}

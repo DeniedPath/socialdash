@@ -1,8 +1,8 @@
 // Example: /app/api/user/update-username/route.ts
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path
-import dbConnect from "@/lib/dbConnect"; // Adjust path
-import User from "@/models/User"; // Adjust path
+import dbConnect from "@/lib/mongoose"; // Adjust path
+import User from "@/app/models/User"; // Adjust path
 import { NextResponse } from 'next/server';
 
 export async function PATCH(request: Request) { // Or POST

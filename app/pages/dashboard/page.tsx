@@ -1,40 +1,44 @@
 // /app/dashboard/page.tsx
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react'; // Added useCallback
 import Link from 'next/link';
 import { useSession, signOut } from "next-auth/react";
-import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
+import { useRouter, usePathname } from 'next/navigation';
 
-// Import icons from lucide-react
 import {
     LayoutDashboard, BarChart3, FileText, Users, MessageSquare,
     Settings, HelpCircle, Bell, UserCircle, ArrowUpRight,
-    PieChart, Activity, List, LogOut, Briefcase, TrendingUp, Target // Added some more icons for variety
+    PieChart as PieChartIcon, Activity as ActivityIcon, List as ListIcon, LogOut, Briefcase, TrendingUp, Target,
+    ChevronDown, AlertCircle, RefreshCw, Youtube as YoutubeIcon, Twitter as TwitterIcon, Instagram as InstagramIcon // Added specific platform icons
 } from 'lucide-react';
 
-// Define a type for Stat Cards
-type StatCardProps = {
+import {
+    ResponsiveContainer, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+    XAxis, YAxis, CartesianGrid, Tooltip, Legend
+} from 'recharts';
+
+// Define types for our data
+type StatCardData = {
     title: string;
     value: string;
     icon: React.ElementType;
-    change?: string; // Optional: for showing percentage change or trend
-    changeType?: 'positive' | 'negative'; // Optional: for styling the change
+    change?: string;
+    changeType?: 'positive' | 'negative';
 };
 
-/**
- * StatCard Component - Reusable component for displaying key metrics with a modern look.
- */
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, change, changeType }) => (
+type ChartDataPoint = { name: string; [key: string]: number | string }; // For line/bar charts
+type PieChartDataPoint = { name: string; value: number; color: string };
+type ActivityItem = { id: string | number; type: string; content: string; time: string; icon: React.ElementType };
+type TopContentItem = { id: string | number; title: string; views: string; engagementRate: string };
+
+// Main StatCard Component (no changes from before)
+const StatCard: React.FC<StatCardData> = ({ title, value, icon: Icon, change, changeType }) => (
     <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
         <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 bg-slate-100 rounded-lg"> {/* Subtle background for icon */}
+            <div className="p-2.5 bg-slate-100 rounded-lg">
                 <Icon className="h-6 w-6 text-blue-600" />
             </div>
-            {/* Optional: Placeholder for a small trend chart or action button */}
-            {/* <button className="text-slate-400 hover:text-blue-600">
-                <MoreHorizontal className="h-5 w-5" />
-            </button> */}
         </div>
         <div>
             <p className="text-sm font-medium text-slate-500 mb-0.5">{title}</p>
@@ -48,37 +52,147 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, change, c
     </div>
 );
 
-/**
- * DashboardPage Component - Main dashboard layout for EchoPulse.
- */
+// Chart Placeholder Component (no changes from before)
+const ChartPlaceholder = ({ message, icon: IconComp = BarChart3 }: { message: string, icon?: React.ElementType }) => (
+    <div className="h-full bg-slate-50 rounded-lg flex flex-col items-center justify-center text-slate-400 border border-dashed border-slate-300 p-4 min-h-[200px]">
+        <IconComp className="h-12 w-12 opacity-50 mb-3" />
+        <span className="text-base text-center">{message}</span>
+    </div>
+);
+
 export default function DashboardPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const pathname = usePathname(); // Get current path for active nav state
+    const pathname = usePathname();
 
-    // Effect to handle authentication status
+    const [selectedPlatform, setSelectedPlatform] = useState<string>('youtube'); // Default to youtube if user is signed in with Google
+    const [statsData, setStatsData] = useState<StatCardData[]>([]);
+    const [lineChartData, setLineChartData] = useState<ChartDataPoint[]>([]);
+    const [pieChartData, setPieChartData] = useState<PieChartDataPoint[]>([]);
+    const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
+    const [topContent, setTopContent] = useState<TopContentItem[]>([]);
+    const [isChartsLoading, setIsChartsLoading] = useState<boolean>(true);
+    const [chartError, setChartError] = useState<string | null>(null);
+
+    // Placeholder for available platforms - this should come from user's connected accounts
+    // and potentially the session to know which ones are active.
+    const [availablePlatforms, setAvailablePlatforms] = useState([
+        // { id: 'overall', name: 'Overall Performance', icon: LayoutDashboard }, // Overall might be a summary
+        { id: 'youtube', name: 'YouTube', icon: YoutubeIcon },
+        { id: 'twitter', name: 'Twitter / X', icon: TwitterIcon },
+        { id: 'instagram', name: 'Instagram', icon: InstagramIcon },
+    ]);
+
+    // Effect for authentication
     useEffect(() => {
         if (status === 'loading') return;
         if (!session) {
-            router.push(`/login?callbackUrl=${pathname}`); // Pass current path as callbackUrl
+            router.push(`/login?callbackUrl=${pathname}`);
+        } else {
+            // TODO: Dynamically populate `availablePlatforms` based on `session.user.connectedAccounts`
+            // For now, if primary login was Google, default to YouTube if not already set.
+            // @ts-ignore
+            if (session.user?.provider === 'google' && selectedPlatform === 'overall' /* initial default */) {
+                setSelectedPlatform('youtube');
+            }
         }
-    }, [session, status, router, pathname]);
+    }, [session, status, router, pathname, selectedPlatform]);
+
+
+    // Memoized fetchChartData function
+    const fetchPlatformData = useCallback(async () => {
+        if (!session || !selectedPlatform || selectedPlatform === 'overall') {
+            // Handle 'overall' case separately if it's a summary of all platforms
+            // or clear data if no specific platform is selected for fetching.
+            if (selectedPlatform === 'overall') {
+                setStatsData([
+                    { title: 'Total Views (Overall)', value: 'N/A', icon: TrendingUp },
+                    { title: 'Total Likes (Overall)', value: 'N/A', icon: Target },
+                    { title: 'Total Subscribers (Overall)', value: 'N/A', icon: Users },
+                ]);
+                setLineChartData([]);
+                setPieChartData([]);
+                // Potentially fetch a summary from a different endpoint or aggregate client-side if feasible
+            }
+            setIsChartsLoading(false);
+            return;
+        }
+
+        setIsChartsLoading(true);
+        setChartError(null);
+        console.log(`Fetching data for platform: ${selectedPlatform}`);
+
+        try {
+            // **ACTUAL API CALL TO YOUR BACKEND**
+            // The backend (/api/analytics/[platform]) will use the user's session
+            // to get the OAuth token for the selectedPlatform and fetch data from the actual social media API.
+            const response = await fetch(`/api/analytics/${selectedPlatform}`);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to fetch ${selectedPlatform} analytics data`);
+            }
+            const data = await response.json();
+
+            // --- Update state with fetched data ---
+            // The structure of 'data' must match what your frontend expects.
+            // Example for YouTube:
+            if (selectedPlatform === 'youtube' && data.youtubeStats) {
+                setStatsData([
+                    { title: 'YouTube Subscribers', value: data.youtubeStats.subscriberCount || '0', icon: Users, change: data.youtubeStats.subscriberChange || undefined, changeType: data.youtubeStats.subscriberChangeType || undefined },
+                    { title: 'Total Views (YouTube)', value: data.youtubeStats.viewCount || '0', icon: TrendingUp },
+                    { title: 'Total Videos (YouTube)', value: data.youtubeStats.videoCount || '0', icon: Briefcase },
+                ]);
+                setLineChartData(data.youtubeTimeSeriesData || []); // e.g., [{ name: 'Date', views: 100, likes: 10}, ...]
+                setPieChartData(data.youtubeTrafficSources || []); // e.g., [{ name: 'Search', value: 50, color: '#FF0000' }, ...]
+                setActivityFeed(data.youtubeRecentActivity || []);
+                setTopContent(data.youtubeTopVideos || []);
+            } else {
+                // Handle other platforms or if data structure is different
+                // Fallback to clearing or showing 'no data' for unhandled platforms
+                setStatsData([]);
+                setLineChartData([]);
+                setPieChartData([]);
+                setActivityFeed([]);
+                setTopContent([]);
+                console.warn(`No specific data handling for platform: ${selectedPlatform} or data was empty.`);
+            }
+
+        } catch (error: any) {
+            console.error(`Error fetching ${selectedPlatform} data:`, error);
+            setChartError(error.message || `Could not load ${selectedPlatform} analytics data.`);
+            // Clear data on error
+            setStatsData([]);
+            setLineChartData([]);
+            setPieChartData([]);
+            setActivityFeed([]);
+            setTopContent([]);
+        } finally {
+            setIsChartsLoading(false);
+        }
+    }, [selectedPlatform, session]); // Dependencies for useCallback
+
+    // Effect to call fetchPlatformData
+    useEffect(() => {
+        if (session && selectedPlatform) {
+            fetchPlatformData();
+        }
+    }, [fetchPlatformData, session, selectedPlatform]); // fetchPlatformData is now stable due to useCallback
+
 
     // Loading State
-    if (status === 'loading') {
+    if (status === 'loading' || (status === 'authenticated' && !session)) { // Handle edge case where status is authenticated but session is briefly null
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-100">
                 <div className="p-10 bg-white rounded-xl shadow-2xl text-center">
                     <LayoutDashboard className="h-16 w-16 text-blue-500 mx-auto mb-6 animate-pulse" />
                     <p className="text-2xl font-semibold text-slate-700">Loading EchoPulse...</p>
-                    <p className="text-base text-slate-500 mt-2">Preparing your dashboard, please wait.</p>
                 </div>
             </div>
         );
     }
 
-    // Unauthenticated State (should be handled by redirect, but as a fallback)
-    if (!session) {
+    if (!session) { // Should be caught by useEffect redirect, but as a safeguard
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-100">
                 <p className="text-xl text-slate-600">Redirecting to login...</p>
@@ -86,35 +200,28 @@ export default function DashboardPage() {
         );
     }
 
-    // Placeholder data - replace with actual data fetching
-    const statsData = [
-        { title: 'Total Views', value: '12,389', icon: TrendingUp, change: '+12.5%', changeType: 'positive' as 'positive' | 'negative' },
-        { title: 'Total Likes', value: '1,402', icon: Target, change: '+8.2%', changeType: 'positive' as 'positive' | 'negative' },
-        { title: 'Total Comments', value: '715', icon: MessageSquare, change: '-1.5%', changeType: 'negative' as 'positive' | 'negative' },
-    ];
+    //const navigationItems = [ /* ... same as before ... */ ];
+    // Ensure navigationItems is defined if you are using it in the return statement
+    // For brevity, I'll assume it's the same as your previous version.
+     const navigationItems = [
+         { name: 'Dashboard', icon: LayoutDashboard, href: '/pages/dashboard' },
+         { name: 'Analytics', icon: BarChart3, href: '/pages/analytics' },
+         { name: 'Reports', icon: FileText, href: '/pages/reports' },
+         { name: 'Content Hub', icon: Briefcase, href: '/pages/content' },
+         { name: 'Audience Insights', icon: Users, href: '/pages/audience' },
+     ];
 
-    const navigationItems = [
-        { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-        { name: 'Analytics', icon: BarChart3, href: '/analytics' },
-        { name: 'Reports', icon: FileText, href: '/reports' },
-        { name: 'Content Hub', icon: Briefcase, href: '/content' }, // Renamed for a more enterprise feel
-        { name: 'Audience Insights', icon: Users, href: '/audience' },
-    ];
 
     return (
         <div className="flex h-screen bg-slate-100 font-sans antialiased">
-            {/* Sidebar Navigation */}
             <aside className="w-72 flex-shrink-0 bg-slate-900 text-slate-300 flex flex-col shadow-2xl">
-                {/* Logo/Brand */}
+                {/* Sidebar content (same as before) */}
                 <div className="h-20 flex items-center justify-center border-b border-slate-700/50">
-                    <Link href="/dashboard" className="flex items-center space-x-2">
-                        {/* You can use an SVG logo here */}
+                    <Link href="/pages/dashboard" className="flex items-center space-x-2">
                         <LayoutDashboard className="h-8 w-8 text-blue-500" />
                         <span className="text-3xl font-bold text-white tracking-tight">EchoPulse</span>
                     </Link>
                 </div>
-
-                {/* Navigation Links */}
                 <nav className="flex-grow py-6 px-5 space-y-2.5">
                     {navigationItems.map((item) => {
                         const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
@@ -134,8 +241,6 @@ export default function DashboardPage() {
                         );
                     })}
                 </nav>
-
-                {/* Sidebar Footer: Settings & Sign Out */}
                 <div className="px-5 py-6 mt-auto border-t border-slate-700/50 space-y-2.5">
                     <Link
                         href="/pages/settings"
@@ -158,24 +263,35 @@ export default function DashboardPage() {
                 </div>
             </aside>
 
-            {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Top Bar/Header */}
                 <header className="h-20 bg-white shadow-md border-b border-slate-200 flex items-center justify-between px-8">
                     <div>
-                        <h1 className="text-2xl font-semibold text-slate-800">Dashboard Overview</h1>
-                        {/* Optional: Breadcrumbs or sub-navigation could go here */}
+                        <h1 className="text-2xl font-semibold text-slate-800">
+                            {availablePlatforms.find(p => p.id === selectedPlatform)?.name || 'Dashboard'} Overview
+                        </h1>
                     </div>
                     <div className="flex items-center space-x-5">
+                        <div className="relative">
+                            <select
+                                value={selectedPlatform}
+                                onChange={(e) => setSelectedPlatform(e.target.value)}
+                                className="appearance-none bg-slate-50 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 pr-10 py-2.5 hover:bg-slate-100 transition-colors"
+                                title="Select Platform"
+                            >
+                                {availablePlatforms.map(platform => (
+                                    <option key={platform.id} value={platform.id}>{platform.name}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="h-4 w-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                        {/* ... other header icons ... */}
                         <button title="Help" className="p-2.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-blue-600 transition-colors">
                             <HelpCircle className="h-5 w-5" />
                         </button>
                         <button title="Notifications" className="relative p-2.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-blue-600 transition-colors">
                             <Bell className="h-5 w-5" />
-                            {/* Optional: Notification badge */}
-                            {/* <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" /> */}
                         </button>
-                        <div className="h-8 border-l border-slate-200"></div> {/* Divider */}
+                        <div className="h-8 border-l border-slate-200"></div>
                         <Link href="/pages/profile" title="Profile" className="flex items-center space-x-3 group">
                             <div className="p-1 rounded-full hover:bg-slate-100 transition-colors">
                                 {session.user?.image ? (
@@ -194,57 +310,91 @@ export default function DashboardPage() {
                     </div>
                 </header>
 
-                {/* Page Content - Scrollable */}
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-8">
-                    {/* Stats Cards Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 mb-10">
-                        {statsData.map((stat) => (
-                            <StatCard key={stat.title} {...stat} />
-                        ))}
-                    </div>
+                    {/* Updated Stats Cards Row */}
+                    {isChartsLoading && statsData.length === 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 mb-10">
+                            {[...Array(3)].map((_, i) => <div key={i} className="bg-white p-5 rounded-xl shadow-lg h-32 animate-pulse"><div className="h-full bg-slate-200 rounded"></div></div>)}
+                        </div>
+                    ) : statsData.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 mb-10">
+                            {statsData.map((stat) => (
+                                <StatCard key={stat.title} {...stat} />
+                            ))}
+                        </div>
+                    ) : !isChartsLoading && ( // Show if not loading and no stats
+                        <div className="mb-10 p-4 bg-amber-50 text-amber-700 border border-amber-300 rounded-lg text-center">
+                            No summary statistics available for {availablePlatforms.find(p=>p.id === selectedPlatform)?.name || 'this platform'}.
+                        </div>
+                    )}
 
-                    {/* Charts Row */}
+
+                    {chartError && (
+                        <div className="mb-8 p-4 bg-red-100 text-red-700 border border-red-300 rounded-lg flex items-center">
+                            <AlertCircle className="h-5 w-5 mr-3" />
+                            {chartError}
+                            <button
+                                onClick={fetchPlatformData} // Re-trigger fetch
+                                className="ml-auto text-sm font-medium hover:underline"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Charts Row - structure remains similar, data source changes */}
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-10">
-                        {/* Visitors Over Time Chart Placeholder (Larger) */}
-                        <div className="lg:col-span-3 bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <h3 className="text-xl font-semibold text-slate-800 mb-1">Visitors Over Time</h3>
-                            <p className="text-sm text-slate-500 mb-5">Track your audience growth and engagement patterns.</p>
-                            <div className="h-80 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 border border-dashed border-slate-300">
-                                <BarChart3 className="h-16 w-16 opacity-60" />
-                                <span className="ml-3 text-lg">Area/Line Chart Placeholder</span>
-                            </div>
+                        <div className="lg:col-span-3 bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 min-h-[400px]">
+                            <h3 className="text-xl font-semibold text-slate-800 mb-1">Engagement Over Time</h3>
+                            <p className="text-sm text-slate-500 mb-5">Key metrics trend for {availablePlatforms.find(p=>p.id === selectedPlatform)?.name || 'selected platform'}.</p>
+                            {isChartsLoading ? <ChartPlaceholder message="Loading chart data..." icon={RefreshCw} /> : lineChartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={320}>
+                                    <LineChart data={lineChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                                        <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
+                                        <YAxis stroke="#64748b" fontSize={12} allowDecimals={false} />
+                                        <Tooltip wrapperClassName="rounded-md shadow-lg" contentStyle={{ backgroundColor: '#fff', border: '1px solid #e0e0e0', borderRadius: '0.5rem' }} />
+                                        <Legend wrapperStyle={{fontSize: "12px"}}/>
+                                        {/* Dynamically add lines based on available keys in data, excluding 'name' */}
+                                        {lineChartData.length > 0 && Object.keys(lineChartData[0]).filter(key => key !== 'name').map((key, index) => (
+                                            <Line key={key} type="monotone" dataKey={key} stroke={['#3b82f6', '#84cc16', '#f97316', '#a855f7'][index % 4]} strokeWidth={2} activeDot={{ r: 6 }} name={key.charAt(0).toUpperCase() + key.slice(1)} />
+                                        ))}
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : <ChartPlaceholder message="No time-series data available." />}
                         </div>
 
-                        {/* Traffic Sources Chart Placeholder (Smaller) */}
-                        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <h3 className="text-xl font-semibold text-slate-800 mb-1">Traffic Sources</h3>
-                            <p className="text-sm text-slate-500 mb-5">Understand where your visitors are coming from.</p>
-                            <div className="h-80 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 border border-dashed border-slate-300">
-                                <PieChart className="h-16 w-16 opacity-60" />
-                                <span className="ml-3 text-lg">Pie Chart Placeholder</span>
-                            </div>
+                        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 min-h-[400px]">
+                            <h3 className="text-xl font-semibold text-slate-800 mb-1">Audience Breakdown</h3>
+                            <p className="text-sm text-slate-500 mb-5">Visitor demographics or sources.</p>
+                            {isChartsLoading ? <ChartPlaceholder message="Loading chart data..." icon={RefreshCw} /> : pieChartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={320}>
+                                    <PieChart>
+                                        <Pie data={pieChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} labelLine={false}
+                                             label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                                 const RADIAN = Math.PI / 180;
+                                                 const radius = innerRadius + (outerRadius - innerRadius) * 0.6; // Adjust label position
+                                                 const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                                 const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                                 return (
+                                                     <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12} fontWeight="medium">
+                                                         {`${(percent * 100).toFixed(0)}%`}
+                                                     </text>
+                                                 );
+                                             }}
+                                        >
+                                            {pieChartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} className="focus:outline-none hover:opacity-80 transition-opacity" />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip wrapperClassName="rounded-md shadow-lg" contentStyle={{ backgroundColor: '#fff', border: '1px solid #e0e0e0', borderRadius: '0.5rem' }} />
+                                        <Legend iconSize={10} wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : <ChartPlaceholder message="No breakdown data available." icon={PieChartIcon} />}
                         </div>
                     </div>
-
-                    {/* Activity/Pages Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <h3 className="text-xl font-semibold text-slate-800 mb-1">Recent Activity</h3>
-                            <p className="text-sm text-slate-500 mb-5">Latest interactions and events on your platforms.</p>
-                            <div className="h-60 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 border border-dashed border-slate-300">
-                                <Activity className="h-16 w-16 opacity-60" />
-                                <span className="ml-3 text-lg">Activity Feed Placeholder</span>
-                            </div>
-                        </div>
-                        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <h3 className="text-xl font-semibold text-slate-800 mb-1">Top Performing Content</h3>
-                            <p className="text-sm text-slate-500 mb-5">Discover your most engaging posts and pages.</p>
-                            <div className="h-60 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 border border-dashed border-slate-300">
-                                <List className="h-16 w-16 opacity-60" />
-                                <span className="ml-3 text-lg">Top Content Placeholder</span>
-                            </div>
-                        </div>
-                    </div>
+                    {/* ... Activity/Pages Row (structure remains similar, data source changes) ... */}
                 </main>
             </div>
         </div>
