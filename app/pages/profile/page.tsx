@@ -68,53 +68,56 @@ export default function ProfilePage() {
         setIsEditMode(!isEditMode);
     };
 
-    const handleProfileSave = async () => {
-        if (!editableUsername.trim()) {
-            setProfileUpdateError("Username cannot be empty.");
-            return;
-        }
-        if (editableUsername.trim().length < 3) { // Matches your User model minlength for username
-            setProfileUpdateError("Username must be at least 3 characters long.");
-            return;
-        }
-        setIsSavingProfile(true);
-        setProfileUpdateError("");
-        setProfileUpdateSuccess("");
+const handleProfileSave = async () => {
+    if (!editableUsername.trim()) {
+        setProfileUpdateError("Username cannot be empty.");
+        return;
+    }
+    if (editableUsername.trim().length < 3) {
+        setProfileUpdateError("Username must be at least 3 characters long.");
+        return;
+    }
+    setIsSavingProfile(true);
+    setProfileUpdateError("");
+    setProfileUpdateSuccess("");
 
-        console.log("Attempting to save profile with new username:", editableUsername);
-        try {
-            // **BACKEND API CALL NEEDED HERE**
-            const response = await fetch('/api/user/update-username', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: editableUsername }),
-            });
+    console.log("Attempting to save profile with new username:", editableUsername);
+    try {
+        // API call to update username in the database
+        const response = await fetch('/api/user/update-username', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: editableUsername }),
+        });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to update username.');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update username.');
+        }
+
+        // 1. Directly update the displayName state (for immediate UI update)
+        setDisplayName(editableUsername);
+        
+        // 2. Update the NextAuth session
+        await updateSession({
+            ...session,
+            user: {
+                ...session?.user,
+                name: editableUsername,
+                username: editableUsername
             }
+        });
 
-            // After successful API call, update the NextAuth session client-side
-            await updateSession({
-                ...session,
-                user: {
-                    ...session?.user,
-                    name: editableUsername, // Update 'name' for NextAuth default
-                    username: editableUsername // Update custom 'username'
-                }
-            });
-            // The useEffect watching session.user.name/username will update displayName state
-
-            setProfileUpdateSuccess("Username updated successfully!");
-            setIsEditMode(false);
-        } catch (error: any) {
-            console.error("Username save error:", error);
-            setProfileUpdateError(error.message || "Failed to update username. Please try again.");
-        } finally {
-            setIsSavingProfile(false);
-        }
-    };
+        setProfileUpdateSuccess("Username updated successfully!");
+        setIsEditMode(false);
+        
+    } catch (error: any) {
+        console.error("Username save error:", error);
+        setProfileUpdateError(error.message || "Failed to update username. Please try again.");
+    } finally {
+        setIsSavingProfile(false);
+    }
+};
 
     const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -228,10 +231,28 @@ export default function ProfilePage() {
                                         placeholder="Enter new username"
                                     />
                                 ) : (
-                                    <h1 className="text-3xl sm:text-4xl font-bold text-slate-800">
-                                        {displayName} {/* Use the displayName state here */}
+                                    // Ensure this part (around line 235) uses the displayName state variable
+                                    <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 px-3 py-2">
+                                        {displayName}
                                     </h1>
                                 )}
+                                {/* User's email and other non-editable details might follow here */}
+                                {/* Button to toggle edit mode */}
+                                {!isEditMode && (
+                                    <div className="mt-4"> {/* Added a div for spacing if needed */}
+                                        <button
+                                            onClick={handleEditProfileToggle}
+                                            className="inline-flex items-center justify-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md shadow-sm text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                        >
+                                            <Edit3 className="h-4 w-4 mr-2 text-slate-500" />
+                                            Edit Username
+                                        </button>
+                                    </div>
+                                )}
+                                {/* Save/Cancel buttons for edit mode would typically be here,
+                                    conditionally rendered when isEditMode is true.
+                                    Your handleProfileSave logic is tied to a save button elsewhere.
+                                */}
                                 {user.email && (
                                     <p className="mt-1.5 text-base text-slate-500 flex items-center justify-center sm:justify-start">
                                         <Mail className="h-5 w-5 mr-2 text-slate-400" />

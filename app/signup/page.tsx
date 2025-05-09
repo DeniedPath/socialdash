@@ -11,26 +11,26 @@ export default function SignupPage() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    
+
     const router = useRouter();
-    
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
-        
+
         // Basic validation
         if (password !== confirmPassword) {
             setError('Passwords do not match');
             return;
         }
-        
+
         if (password.length < 6) {
             setError('Password must be at least 6 characters long');
             return;
         }
-        
+
         setLoading(true);
-        
+
         try {
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
@@ -43,16 +43,16 @@ export default function SignupPage() {
                     password,
                 }),
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.message || 'Something went wrong');
             }
-            
+
             console.log('Signup successful:', data);
             router.push('/login');
-            
+
         } catch (err: any) {
             console.error('Signup error:', err);
             setError(err.message || 'An error occurred during signup');
@@ -60,7 +60,7 @@ export default function SignupPage() {
             setLoading(false);
         }
     };
-    
+
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 font-sans">
             <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
@@ -72,14 +72,14 @@ export default function SignupPage() {
                         Join EchoPulse today and start connecting.
                     </p>
                 </div>
-                
+
                 <form className="space-y-5" onSubmit={handleSubmit}>
                     {error && (
                         <p className="px-3 py-2 text-sm font-medium text-center text-red-700 bg-red-100 rounded-md border border-red-200">
                             {error}
                         </p>
                     )}
-                    
+
                     {/* Username Input */}
                     <div>
                         <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
@@ -92,11 +92,11 @@ export default function SignupPage() {
                             required
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm text-black"
                             placeholder="Choose a username"
                         />
                     </div>
-                    
+
                     {/* Email Input */}
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -110,11 +110,11 @@ export default function SignupPage() {
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm text-black"
                             placeholder="you@example.com"
                         />
                     </div>
-                    
+
                     {/* Password Input */}
                     <div>
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
@@ -128,11 +128,11 @@ export default function SignupPage() {
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm text-black"
                             placeholder="Create a password"
                         />
                     </div>
-                    
+
                     {/* Confirm Password Input */}
                     <div>
                         <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
@@ -146,11 +146,11 @@ export default function SignupPage() {
                             required
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm text-black"
                             placeholder="Confirm your password"
                         />
                     </div>
-                    
+
                     {/* Submit Button */}
                     <div>
                         <button
@@ -166,7 +166,7 @@ export default function SignupPage() {
                         </button>
                     </div>
                 </form>
-                
+
                 {/* Link to Login Page */}
                 <p className="mt-6 text-sm text-center text-gray-600">
                     Already have an account?{' '}
