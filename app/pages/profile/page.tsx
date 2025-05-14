@@ -68,56 +68,53 @@ export default function ProfilePage() {
         setIsEditMode(!isEditMode);
     };
 
-const handleProfileSave = async () => {
-    if (!editableUsername.trim()) {
-        setProfileUpdateError("Username cannot be empty.");
-        return;
-    }
-    if (editableUsername.trim().length < 3) {
-        setProfileUpdateError("Username must be at least 3 characters long.");
-        return;
-    }
-    setIsSavingProfile(true);
-    setProfileUpdateError("");
-    setProfileUpdateSuccess("");
-
-    console.log("Attempting to save profile with new username:", editableUsername);
-    try {
-        // API call to update username in the database
-        const response = await fetch('/api/user/update-username', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: editableUsername }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update username.');
+    const handleProfileSave = async () => {
+        if (!editableUsername.trim()) {
+            setProfileUpdateError("Username cannot be empty.");
+            return;
         }
+        if (editableUsername.trim().length < 3) {
+            setProfileUpdateError("Username must be at least 3 characters long.");
+            return;
+        }
+        setIsSavingProfile(true);
+        setProfileUpdateError("");
+        setProfileUpdateSuccess("");
 
-        // 1. Directly update the displayName state (for immediate UI update)
-        setDisplayName(editableUsername);
-        
-        // 2. Update the NextAuth session
-        await updateSession({
-            ...session,
-            user: {
-                ...session?.user,
-                name: editableUsername,
-                username: editableUsername
+        try {
+            // API call to update username in the database
+            const response = await fetch('/api/user/update-username', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: editableUsername }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to update username.');
             }
-        });
 
-        setProfileUpdateSuccess("Username updated successfully!");
-        setIsEditMode(false);
-        
-    } catch (error: any) {
-        console.error("Username save error:", error);
-        setProfileUpdateError(error.message || "Failed to update username. Please try again.");
-    } finally {
-        setIsSavingProfile(false);
-    }
-};
+            // Completely refresh the session
+            const refreshResponse = await fetch('/api/auth/session', { method: 'GET' });
+            const refreshedSession = await refreshResponse.json();
+
+            // Manually update the session using NextAuth's update method
+            await updateSession(refreshedSession);
+
+            // Update local state
+            setDisplayName(editableUsername);
+            setEditableUsername(editableUsername);
+
+            setProfileUpdateSuccess("Username updated successfully!");
+            setIsEditMode(false);
+
+        } catch (error: any) {
+            console.error("Username save error:", error);
+            setProfileUpdateError(error.message || "Failed to update username. Please try again.");
+        } finally {
+            setIsSavingProfile(false);
+        }
+    };
 
     const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -189,7 +186,7 @@ const handleProfileSave = async () => {
     }
 
     const { user } = session;
-    // @ts-ignore
+    // @ts-expect-error
     const providerName = session.account?.provider ?
         // @ts-ignore
         session.account.provider.charAt(0).toUpperCase() + session.account.provider.slice(1) :
