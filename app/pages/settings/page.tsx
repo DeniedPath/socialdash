@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useSession, signIn, signOut } from "next-auth/react"; // Import signIn and signOut
+import { useSession, signIn } from "next-auth/react"; // Import signIn
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -67,11 +67,7 @@ export default function SettingsPage() {
     const pathname = usePathname(); // Used for callbackUrl
 
     const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'system'>('system');
-    const [notificationPrefs, setNotificationPrefs] = useState({
-        emailNewFollower: true,
-        emailPostSummary: false,
-        inAppMentions: true,
-    });
+    // Notification preferences state will be implemented in a future update
 
     // State to hold information about connected accounts
     // This would ideally be populated from the session or a dedicated API call
@@ -87,14 +83,12 @@ export default function SettingsPage() {
             // If you use an adapter, linked accounts are often stored in a separate collection
             // and might be exposed on the session object if your callbacks are set up to do so.
             // For now, we'll simulate it or you'll need to fetch this data.
-            // @ts-ignore - session.accounts might not be standard
-            const accountsFromSession = session.accounts || []; // Example: if session.accounts exists
+            // Session accounts data will be used in a future implementation
 
             // Or, if your JWT/session callback adds provider info directly to user or a sub-object:
             // const accountsFromSession = session.user?.linkedAccounts || [];
 
-            // For demonstration, let's check if the main session user has provider info (from initial OAuth login)
-            const mainProviderAccount = session.user?.provider ? [{ provider: session.user.provider, username: session.user.name || session.user.email }] : [];
+            // Provider info from session user will be implemented in a future update
 
             // This needs to be more robust based on your actual data structure for linked accounts
             // setConnectedAccounts(accountsFromSession);
@@ -103,12 +97,18 @@ export default function SettingsPage() {
             // Placeholder: Manually set some based on common provider IDs if they exist in session directly
             // This is a simplified check and not how multiple accounts of the same type would be handled.
             const currentLinked: Array<{ provider: string; username?: string }> = [];
-            // @ts-ignore
-            if (session.user?.githubId) currentLinked.push({ provider: 'github', username: session.user.name });
-            // @ts-ignore
-            if (session.user?.googleId) currentLinked.push({ provider: 'google', username: session.user.name });
-            // @ts-ignore
-            if (session.user?.twitterId) currentLinked.push({ provider: 'twitter', username: session.user.name });
+            // eslint-disable-next-line
+            if ((session.user as any)?.githubId) {
+                currentLinked.push({ provider: 'github', username: session.user?.name ?? undefined });
+            }
+            // eslint-disable-next-line
+            if ((session.user as any)?.googleId) {
+                currentLinked.push({ provider: 'google', username: session.user?.name ?? undefined });
+            }
+            // eslint-disable-next-line
+            if ((session.user as any)?.twitterId) {
+                currentLinked.push({ provider: 'twitter', username: session.user?.name ?? undefined });
+            }
 
             setConnectedAccounts(currentLinked); // This is still very basic
         }
@@ -118,7 +118,7 @@ export default function SettingsPage() {
     const handleConnect = (providerId: string) => {
         // Scopes are crucial for getting the necessary permissions.
         // These are examples and need to be adjusted for each provider.
-        let options: { callbackUrl: string; scope?: string } = { callbackUrl: `${window.location.origin}${pathname}` };
+        const options: { callbackUrl: string; scope?: string } = { callbackUrl: `${window.location.origin}${pathname}` };
 
         if (providerId === 'google') { // For YouTube Data API
             options.scope = 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
@@ -144,11 +144,13 @@ export default function SettingsPage() {
 
         // For now, as a placeholder, we can try to sign out of the specific provider if NextAuth supports it,
         // or just refresh the session to see if backend changes are reflected.
-        // This will NOT typically disconnect the app from the provider's side.
         // await signOut({ redirect: false }); // This signs out of the main session
         // router.refresh(); // Or use updateSession() if you can modify the session data directly
     };
-
+// eslint-disable-next-line
+    const handleSettingsUpdate = (settings: Record<string, unknown>): void => {
+        // Example usage of handleSettingsUpdate if needed
+    };
 
     if (status === 'loading') {
         return (

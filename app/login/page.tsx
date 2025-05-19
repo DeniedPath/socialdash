@@ -23,7 +23,7 @@ export default function LoginPage() {
 
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { data: session, status } = useSession();
+    const { status } = useSession();
 
     // Get callbackUrl from query parameters or default to dashboard
     const callbackUrl = searchParams?.get('callbackUrl') || '/pages/dashboard';
@@ -214,14 +214,14 @@ export default function LoginPage() {
                     <div>
                         <button
                             type="submit"
-                            disabled={loading || status === 'loading'}
+                            disabled={loading || status === 'loading' as unknown}
                             className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition duration-150 ease-in-out ${
-                                (loading || status === 'loading')
+                                (loading || status === 'loading' as unknown)
                                     ? 'bg-blue-400 cursor-not-allowed'
                                     : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                             } disabled:opacity-75`}
                         >
-                            {(loading || status === 'loading') ? 'Logging In...' : 'Log In'}
+                            {(loading || status === 'loading' as unknown) ? 'Logging In...' : 'Log In'}
                         </button>
                     </div>
                 </form>
@@ -240,7 +240,7 @@ export default function LoginPage() {
                 <div>
                     <button
                         onClick={() => signIn('github', { callbackUrl: callbackUrl })} // Specify callbackUrl
-                        disabled={loading || status === 'loading'}
+                        disabled={loading || status === 'loading' as unknown}
                         className="w-full flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-75 disabled:cursor-not-allowed"
                     >
                         {/* Replace with actual GitHub icon SVG or an icon component */}
@@ -251,7 +251,7 @@ export default function LoginPage() {
                     </button>
                     <button
                         onClick={() => signIn('google', { callbackUrl: callbackUrl })} // Specify callbackUrl
-                        disabled={loading || status === 'loading'}
+                        disabled={loading || status === 'loading' as unknown}
                         className="w-full flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-75 disabled:cursor-not-allowed"
                     >
                         <svg className="w-5 h-5 mr-2" viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg">
@@ -267,7 +267,7 @@ export default function LoginPage() {
 
 
                 <p className="mt-6 text-sm text-center text-gray-600">
-                    Don't have an account yet?{' '}
+                    Don&apos;t have an account yet?{' '}
                     <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500 hover:underline">
                         Sign up now
                     </Link>

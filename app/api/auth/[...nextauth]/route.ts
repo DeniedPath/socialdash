@@ -13,7 +13,7 @@ import bcrypt from 'bcryptjs'; // For password comparison
 // import dbConnect from '@/lib/dbConnect'; // Adjust path as needed
 
 // Import your Mongoose User model
-import User, { IUser } from '@/app/models/User'; // Adjust path to your User model
+import User from '@/app/models/User'; // Adjust path to your User model
 
 // Define a custom User type for NextAuth that aligns with your IUser
 // NextAuth's User type expects 'id', 'name', 'email', 'image' (optional)
@@ -22,6 +22,15 @@ interface NextAuthCustomUser extends NextAuthUser {
     id: string; // This will be user._id.toString()
     username?: string; // From your IUser model
     // Add any other custom properties you want in the token/session
+}
+
+// Define custom session user type
+interface CustomSessionUser {
+    id: string;
+    username: string;
+    name?: string;
+    email?: string;
+    image?: string;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -40,7 +49,7 @@ export const authOptions: NextAuthOptions = {
                 email: { label: "Email", type: "email", placeholder: "you@example.com" },
                 password: { label: "Password", type: "password" }
             },
-            async authorize(credentials, req): Promise<NextAuthCustomUser | null> {
+            async authorize(credentials): Promise<NextAuthCustomUser | null> {
                 if (!credentials?.email || !credentials?.password) {
                     console.error("Authorize: Missing email or password");
                     throw new Error('Please enter both email and password.');
@@ -77,7 +86,7 @@ export const authOptions: NextAuthOptions = {
                         // If authentication is successful, return a user object for NextAuth.
                         // This object is then passed to the `jwt` callback.
                         return {
-                            id: userFromDb._id.toString(), // MongoDB _id needs to be converted to string
+                            id: (userFromDb._id as unknown as string).toString(), // MongoDB _id needs to be converted to string
                             name: userFromDb.username, // Using username as 'name' for NextAuth session
                             email: userFromDb.email,
                             username: userFromDb.username, // You can add custom fields
@@ -123,14 +132,14 @@ export const authOptions: NextAuthOptions = {
             // `token` is the object returned from the `jwt` callback.
             // We add the custom properties from the token to the `session.user` object.
             if (token && session.user) {
-                (session.user as any).id = token.id;
-                (session.user as any).username = token.username;
+                (session.user as CustomSessionUser).id = token.id as string;
+                (session.user as CustomSessionUser).username = token.username as string;
                 // session.user.name is already set by NextAuth from token.name
                 // session.user.email is already set by NextAuth from token.email
                 // session.user.image is already set by NextAuth from token.picture
 
                 // If you stored provider in token, you can expose it to session if needed
-                // (session.user as any).provider = token.provider;
+                // (session.user as CustomSessionUser).provider = token.provider;
             }
             return session;
         },

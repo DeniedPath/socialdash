@@ -8,16 +8,16 @@ import { useRouter, usePathname } from 'next/navigation';
 
 // Import icons from lucide-react
 import {
-    LayoutDashboard, BarChart3, FileText, Users, MessageSquare,
-    Settings, HelpCircle, Bell, UserCircle, ArrowUpRight, TrendingUp, TrendingDown,
-    PieChart as PieChartIcon, Activity as ActivityIcon, List as ListIcon, LogOut, Briefcase, Target,
-    ChevronDown, AlertCircle, RefreshCw, CalendarDays, Users2, Heart, MessageCircleQuestion, ThumbsUp, Eye
+    LayoutDashboard, BarChart3, FileText, Users,
+    Settings, TrendingUp, TrendingDown,
+    PieChart as PieChartIcon, LogOut, Briefcase,
+    ChevronDown, AlertCircle, RefreshCw, CalendarDays, Users2, Heart
 } from 'lucide-react';
 
 // Import Recharts components
 import {
     ResponsiveContainer, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-    XAxis, YAxis, CartesianGrid, Tooltip, Legend, DonutChart // Added DonutChart
+    XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from 'recharts';
 
 // Define a type for Stat Cards
@@ -62,7 +62,7 @@ const ChartPlaceholder = ({ message, icon: IconComp = BarChart3, height = "h-ful
 );
 
 // Sample data for charts - replace with fetched data
-const sampleFollowerEngagementData = [
+const sampleFollowerEngagementData: FollowerEngagementDataPoint[] = [
     { date: '2024-04-01', followers: 1200, engagement: 250 },
     { date: '2024-04-08', followers: 1250, engagement: 280 },
     { date: '2024-04-15', followers: 1300, engagement: 260 },
@@ -70,17 +70,39 @@ const sampleFollowerEngagementData = [
     { date: '2024-04-29', followers: 1450, engagement: 300 },
 ];
 
-const samplePlatformDistributionData = [
+const samplePlatformDistributionData: PlatformDistributionDataPoint[] = [
     { name: 'YouTube', value: 45, color: '#FF0000' },
     { name: 'Twitter/X', value: 30, color: '#1DA1F2' },
     { name: 'Instagram', value: 25, color: '#E1306C' },
 ];
 
-const sampleOverallTrendData = [
-    { month: 'Jan', value: 12000 }, { month: 'Feb', value: 15000 }, { month: 'Mar', value: 13500 },
-    { month: 'Apr', value: 16000 }, { month: 'May', value: 18500 }, { month: 'Jun', value: 17000 },
+const sampleOverallTrendData: OverallTrendDataPoint[] = [
+    { month: 'Jan', value: 12000 },
+    { month: 'Feb', value: 15000 },
+    { month: 'Mar', value: 13500 },
+    { month: 'Apr', value: 16000 },
+    { month: 'May', value: 18500 },
+    { month: 'Jun', value: 17000 },
 ];
 
+// Define missing types
+interface FollowerEngagementDataPoint {
+    date: string;
+    followers: number;
+    engagement: number; // Corrected from engagementRate
+}
+
+interface PlatformDistributionDataPoint {
+    name: string; // Corrected from platform
+    value: number;
+    color: string;
+}
+
+interface OverallTrendDataPoint {
+    month: string; // Corrected from date
+    value: number;
+    metric?: string; // Made optional to match usage
+}
 
 export default function AnalyticsPage() {
     const { data: session, status } = useSession();
@@ -88,13 +110,31 @@ export default function AnalyticsPage() {
     const pathname = usePathname();
 
     const [selectedPlatform, setSelectedPlatform] = useState<string>('overall');
-    const [dateRange, setDateRange] = useState<string>('last_30_days'); // Placeholder
+    const [dateRange] = useState<string>('last_30_days'); // Placeholder for date range selection
 
+    // Define types for chart data
+    type FollowerEngagementDataPoint = {
+        date: string;
+        followers: number;
+        engagement: number;
+    };
+    
+    type PlatformDistributionDataPoint = {
+        name: string;
+        value: number;
+        color: string;
+    };
+    
+    type OverallTrendDataPoint = {
+        month: string;
+        value: number;
+    };
+    
     // State for chart data
     const [analyticsStats, setAnalyticsStats] = useState<AnalyticsStatCardProps[]>([]);
-    const [followerEngagementData, setFollowerEngagementData] = useState<any[]>([]);
-    const [platformDistributionData, setPlatformDistributionData] = useState<any[]>([]);
-    const [overallTrendData, setOverallTrendData] = useState<any[]>([]);
+    const [followerEngagementData, setFollowerEngagementData] = useState<FollowerEngagementDataPoint[]>([]);
+    const [platformDistributionData, setPlatformDistributionData] = useState<PlatformDistributionDataPoint[]>([]);
+    const [overallTrendData, setOverallTrendData] = useState<OverallTrendDataPoint[]>([]);
 
 
     const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
@@ -109,7 +149,7 @@ export default function AnalyticsPage() {
     }, [session, status, router, pathname]);
 
     // Memoized fetchAnalyticsData function
-    const fetchAnalyticsData = useCallback(async () => {
+    const fetchAnalyticsData = useCallback(async (): Promise<void> => {
         if (!session) return;
 
         setIsDataLoading(true);
@@ -140,9 +180,10 @@ export default function AnalyticsPage() {
             setPlatformDistributionData(samplePlatformDistributionData);
             setOverallTrendData(sampleOverallTrendData);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(`Error fetching analytics data:`, error);
-            setDataError(error.message || "Could not load analytics data.");
+            const errorMessage = error instanceof Error ? error.message : "Could not load analytics data.";
+            setDataError(errorMessage);
             // Clear data on error
             setAnalyticsStats([]);
             setFollowerEngagementData([]);
@@ -313,7 +354,7 @@ export default function AnalyticsPage() {
                         </div>
                         <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 min-h-[350px]">
                             <h3 className="text-lg font-semibold text-slate-800 mb-1">Platform Distribution</h3>
-                            <p className="text-xs text-slate-500 mb-4">Contribution of each platform (if 'Overall' is selected).</p>
+                            <p className="text-xs text-slate-500 mb-4">Contribution of each platform (if &apos;Overall&apos; is selected).</p>
                             {isDataLoading ? <ChartPlaceholder message="Loading data..." icon={RefreshCw} height="h-[250px]" /> : platformDistributionData.length > 0 ? (
                                 <ResponsiveContainer width="100%" height={250}>
                                     <PieChart>

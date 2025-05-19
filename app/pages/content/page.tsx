@@ -5,12 +5,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 // Import icons from lucide-react
 import {
     LayoutDashboard, BarChart3, FileText, Users, MessageSquare, Edit, Send, FileArchive,
-    Settings, HelpCircle, Bell, UserCircle, LogOut, Briefcase,
-    ChevronDown, AlertCircle, RefreshCw, CalendarDays, Filter, PlusCircle, Eye, Trash2, Edit2, Twitter,
+    Settings, LogOut, Briefcase,
+    ChevronDown, AlertCircle, CalendarDays, Eye, Trash2, Edit2, Twitter,
     Linkedin,
     Youtube, Instagram, Facebook, ThumbsUp
 } from 'lucide-react';
@@ -36,8 +37,8 @@ const sampleContentData: ContentItem[] = [
     { id: 'post002', headline: 'Deep Dive: Q1 Analytics Trends', platform: 'LinkedIn', platformIcon: Linkedin, date: '2024-05-08', status: 'Published', views: '800', likes: '95', link: '#' },
     { id: 'post003', headline: 'Upcoming Webinar: Mastering Social Engagement', platform: 'YouTube', platformIcon: Youtube, date: '2024-05-15', status: 'Scheduled', imageUrl: 'https://placehold.co/100x60/a2d2ff/ffffff?text=Webinar' },
     { id: 'post004', headline: 'Brainstorming new content ideas for #EchoPulseTips', platform: 'Internal Draft', platformIcon: MessageSquare, date: '2024-05-12', status: 'Draft' },
-    { id: 'post005', name: 'Behind the Scenes: A Day at EchoPulse HQ', platform: 'Instagram', platformIcon: Instagram, date: '2024-05-05', status: 'Published', imageUrl: 'https://placehold.co/100x100/ffafcc/ffffff?text=BTS', views: '2.5K', likes: '320', link: '#' },
-    { id: 'post006', name: 'Archived Campaign: Summer Sale 2023', platform: 'Facebook', platformIcon: Facebook, date: '2023-08-15', status: 'Archived' },
+    { id: 'post005', headline: 'BTS Concert Highlights', platform: 'Instagram', platformIcon: Instagram, date: '2024-05-05', status: 'Published', imageUrl: 'https://placehold.co/100x100/ffafcc/ffffff?text=BTS', views: '2.5K', likes: '320', link: '#' },
+    { id: 'post006', headline: 'Archived Campaign: Summer Sale 2023', platform: 'Facebook', platformIcon: Facebook, date: '2023-08-15', status: 'Archived' },
 ];
 
 
@@ -47,7 +48,7 @@ export default function ContentPage() {
     const pathname = usePathname();
 
     const [activeTab, setActiveTab] = useState<'published' | 'drafts' | 'scheduled' | 'archived'>('published');
-    const [dateRange, setDateRange] = useState<string>('last_30_days'); // Placeholder
+    const [dateRange] = useState<string>('last_30_days'); // Placeholder
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [platformFilter, setPlatformFilter] = useState<string>('all');
 
@@ -103,9 +104,12 @@ export default function ContentPage() {
             }
 
 
-        } catch (error: any) {
+        } catch (error: Error | unknown) {
             console.error(`Error fetching content data:`, error);
-            setDataError(error.message || "Could not load content.");
+            const errorMessage = error instanceof Error 
+                ? error.message 
+                : "Could not load content.";
+            setDataError(errorMessage);
             setContentItems([]);
         } finally {
             setIsDataLoading(false);
@@ -301,7 +305,18 @@ export default function ContentPage() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center">
                                                     {item.imageUrl && (
-                                                        <img src={item.imageUrl} alt="Content preview" className="h-10 w-16 object-cover rounded mr-3 flex-shrink-0" onError={(e) => e.currentTarget.style.display='none'} />
+                                                        <Image 
+                                                            src={item.imageUrl} 
+                                                            alt="Content preview" 
+                                                            width={64}
+                                                            height={40}
+                                                            className="h-10 w-16 object-cover rounded mr-3 flex-shrink-0" 
+                                                            onError={(e) => {
+                                                                // TypeScript expects the error event, so we need to cast it
+                                                                const target = e.target as HTMLImageElement;
+                                                                target.style.display = 'none';
+                                                            }} 
+                                                        />
                                                     )}
                                                     <div className="text-sm font-medium text-slate-900 truncate" title={item.headline}>{item.headline}</div>
                                                 </div>
@@ -340,7 +355,7 @@ export default function ContentPage() {
                         ) : (
                             <div className="p-10 text-center text-slate-500">
                                 <Briefcase className="h-12 w-12 mx-auto text-slate-400 mb-3" />
-                                <p>No content found for "{activeTab}" that matches your filters.</p>
+                                <p>No content found for &quot;{activeTab}&quot; that matches your filters.</p>
                                 <p className="text-xs mt-1">Try adjusting your search or filters.</p>
                             </div>
                         )}

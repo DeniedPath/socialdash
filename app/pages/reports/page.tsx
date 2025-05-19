@@ -8,9 +8,9 @@ import { useRouter, usePathname } from 'next/navigation';
 
 // Import icons from lucide-react
 import {
-    LayoutDashboard, BarChart3, FileText, Users, MessageSquare,
-    Settings, HelpCircle, Bell, UserCircle, LogOut, Briefcase,
-    ChevronDown, AlertCircle, RefreshCw, CalendarDays, Download, FileSpreadsheet, Brain // Added more icons
+    LayoutDashboard, BarChart3, FileText, Users,
+    Settings, LogOut, Briefcase,
+    ChevronDown, AlertCircle, CalendarDays, Download, FileSpreadsheet, Brain // Added more icons
 } from 'lucide-react';
 
 // Define a type for Report items
@@ -39,7 +39,7 @@ export default function ReportsPage() {
     const router = useRouter();
     const pathname = usePathname();
 
-    const [dateRange, setDateRange] = useState<string>('last_30_days'); // Placeholder
+    const [dateRange] = useState<string>('last_30_days'); // Placeholder
     const [reports, setReports] = useState<ReportItem[]>([]);
     const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
     const [dataError, setDataError] = useState<string | null>(null);
@@ -76,9 +76,9 @@ export default function ReportsPage() {
             await new Promise(resolve => setTimeout(resolve, 1000));
             setReports(sampleReportsData);
 
-        } catch (error: any) {
+        } catch (error: Error | unknown) {
             console.error(`Error fetching reports data:`, error);
-            setDataError(error.message || "Could not load reports.");
+            setDataError(error instanceof Error ? error.message : "Could not load reports.");
             setReports([]);
         } finally {
             setIsDataLoading(false);

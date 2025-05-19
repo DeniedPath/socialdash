@@ -3,19 +3,20 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from 'next/navigation';
 
 // Import icons from lucide-react
 import {
-    LayoutDashboard, BarChart3, FileText, Users, MessageSquare, Briefcase,
-    Settings, HelpCircle, Bell, UserCircle, LogOut, TrendingUp, TrendingDown,
-    ChevronDown, AlertCircle, RefreshCw, CalendarDays, Users2, UserPlus, MapPin, Percent, LineChart as LineChartIcon
+    LayoutDashboard, BarChart3, FileText, Users, Briefcase,
+    Settings, LogOut, TrendingUp, TrendingDown,
+    ChevronDown, AlertCircle, RefreshCw, CalendarDays, Users2, UserPlus, Percent, LineChart as LineChartIcon
 } from 'lucide-react';
 
 // Import Recharts components
 import {
-    ResponsiveContainer, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+    ResponsiveContainer, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, AreaChart, Area
 } from 'recharts';
 
@@ -61,9 +62,9 @@ const ChartPlaceholder = ({ message, icon: IconComp = BarChart3, height = "h-ful
 
 // Sample data - replace with fetched data
 const sampleAudienceStats = [
-    { title: 'Total Followers', value: '25.6K', icon: Users2, change: '+1.2K', changeType: 'positive' as 'positive', period: 'last 30 days' },
-    { title: 'New Followers', value: '850', icon: UserPlus, change: '+5.8%', changeType: 'positive' as 'positive', period: 'last 7 days' },
-    { title: 'Engagement Rate', value: '3.9%', icon: Percent, change: '-0.3%', changeType: 'negative' as 'negative', period: 'last 30 days' },
+    { title: 'Total Followers', value: '25.6K', icon: Users2, change: '+1.2K', changeType: 'positive' as const, period: 'last 30 days' },
+    { title: 'New Followers', value: '850', icon: UserPlus, change: '+5.8%', changeType: 'positive' as const, period: 'last 7 days' },
+    { title: 'Engagement Rate', value: '3.9%', icon: Percent, change: '-0.3%', changeType: 'negative' as const, period: 'last 30 days' },
 ];
 
 const sampleFollowerGrowthData = [
@@ -82,14 +83,34 @@ export default function AudiencePage() {
     const pathname = usePathname();
 
     const [selectedPlatform, setSelectedPlatform] = useState<string>('overall');
-    const [dateRange, setDateRange] = useState<string>('last_30_days');
+    const [dateRange] = useState<string>('last_30_days');
 
+    // Define types for the data
+    type FollowerGrowthDataPoint = {
+        date: string;
+        followers: number;
+    };
+    
+    type DemographicsDataPoint = {
+        name: string;
+        value: number;
+        color: string;
+    };
+    
+    type AudienceActivityItem = {
+        id: string;
+        name: string;
+        platform: string;
+        date: string;
+        avatar: string;
+    };
+    
     // State for audience data
     const [audienceStats, setAudienceStats] = useState<AudienceStatCardProps[]>([]);
-    const [followerGrowthData, setFollowerGrowthData] = useState<any[]>([]);
-    const [demographicsData, setDemographicsData] = useState<any[]>([]);
+    const [followerGrowthData, setFollowerGrowthData] = useState<FollowerGrowthDataPoint[]>([]);
+    const [demographicsData, setDemographicsData] = useState<DemographicsDataPoint[]>([]);
     // Placeholder for a list of recent followers or top influencers
-    const [audienceActivity, setAudienceActivity] = useState<any[]>([]);
+    const [audienceActivity, setAudienceActivity] = useState<AudienceActivityItem[]>([]);
 
 
     const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
@@ -138,9 +159,10 @@ export default function AudiencePage() {
             ]);
 
 
-        } catch (error: any) {
-            console.error(`Error fetching audience data:`, error);
-            setDataError(error.message || "Could not load audience insights.");
+                } catch (error: Error | unknown) {
+                    console.error(`Error fetching audience data:`, error);
+                    const errorMessage = error instanceof Error ? error.message : "Could not load audience insights.";
+                    setDataError(errorMessage);
             setAudienceStats([]);
             setFollowerGrowthData([]);
             setDemographicsData([]);
@@ -328,7 +350,7 @@ export default function AudiencePage() {
                                         <Legend wrapperStyle={{fontSize: "10px"}}/>
                                     </PieChart>
                                 </ResponsiveContainer>
-                            ) : <ChartPlaceholder message="No demographics data available." icon={PieChartIcon} height="h-[280px]" />}
+                            ) : <ChartPlaceholder message="No demographics data available." icon={LineChartIcon} height="h-[280px]" />}
                         </div>
                     </div>
 
@@ -340,7 +362,18 @@ export default function AudiencePage() {
                             <ul className="space-y-3 max-h-72 overflow-y-auto pr-2">
                                 {audienceActivity.map(activity => (
                                     <li key={activity.id} className="flex items-center p-3 bg-slate-50 rounded-md hover:bg-slate-100 transition-colors">
-                                        <img src={activity.avatar} alt={activity.name} className="h-8 w-8 rounded-full mr-3 flex-shrink-0" onError={(e) => e.currentTarget.style.display='none'}/>
+                                        <Image 
+                                            src={activity.avatar} 
+                                            alt={activity.name} 
+                                            width={32} 
+                                            height={32} 
+                                            className="rounded-full mr-3 flex-shrink-0"
+                                            onError={(e) => {
+                                                // Handle image load error
+                                                const target = e.target as HTMLImageElement;
+                                                target.style.display = 'none';
+                                            }}
+                                        />
                                         <div>
                                             <p className="text-sm font-medium text-slate-700">{activity.name}</p>
                                             <p className="text-xs text-slate-500">Joined on {activity.date} via {activity.platform}</p>

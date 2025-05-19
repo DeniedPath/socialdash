@@ -119,8 +119,8 @@ export async function GET(
 
         return NextResponse.json(responseData, { status: 200 });
 
-    } catch (error: any) {
-        console.error(`API Error fetching data for ${platform}:`, error);
-        return NextResponse.json({ message: "Internal Server Error", error: error.message }, { status: 500 });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return NextResponse.json({ message: "Internal Server Error", error: errorMessage }, { status: 500 });
     }
 }

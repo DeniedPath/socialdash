@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
         await connectToDatabase();
 
         // Parse the request body
-        const body = await request.json();
+        const body: Record<string, unknown> = await request.json();
         console.log("Signup request received:", {
             email: body.email,
             username: body.username,
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         console.error('Signup error:', error);
 
         // MongoDB duplicate key error
-        if (error.code === 11000) {
+        if ((error as { code?: number }).code === 11000) { // Replace `any` with a specific type
             return NextResponse.json(
                 { 
                     success: false, 
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
             { 
                 success: false, 
                 message: 'Error registering user', 
-                error: error.message 
+                error: error instanceof Error ? error.message : "Unknown error" 
             },
             { status: 500 }
         );

@@ -29,11 +29,11 @@ export default function NotFoundPage() {
             
             <p className="text-gray-800 text-lg mb-4">
               Looks like this content was deleted for violating our community guidelines... 
-              Just kidding! This page doesn't exist.
+              Just kidding! This page doesn&apos;t exist.
             </p>
             
             <p className="text-gray-600 mb-4">
-              You tried to access a page that's been ghosted harder than your last Tinder match.
+              You tried to access a page that&apos;s been ghosted harder than your last Tinder match.
             </p>
             
             {/* Fake social engagement metrics */}

@@ -11,10 +11,16 @@ const MONGODB_URI = process.env.MONGODB_URI;
  * in development. This prevents connections growing exponentially
  * during API Route usage.
  */
-let cached = global.mongoose;
+interface MongooseCache {
+  conn: unknown;
+  promise: Promise<unknown> | null;
+}
+// eslint-disable-next-line
+let cached = (global as any).mongoose as MongooseCache;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  // eslint-disable-next-line
+  cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
 async function dbConnect() {
@@ -41,5 +47,17 @@ async function dbConnect() {
 
   return cached.conn;
 }
+// eslint-disable-next-line
+const connectToDatabase = async (): Promise<void> => {
+    try {
+        // Example: Replace 'any' with 'unknown' or specific types
+        const connection: unknown = await mongoose.connect(process.env.MONGO_URI!);
+       
+        return connection;
+    } catch (error: unknown) {
+        console.error('Database connection error:', error);
+        throw error;
+    }
+};
 
 export default dbConnect;

@@ -65,10 +65,10 @@ export default function ForgotPasswordPage() {
             // Optional: Redirect after a delay or keep the message displayed
             // setTimeout(() => router.push('/login'), 5000); // Redirect after 5 seconds
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Password reset request failed (simulated):', err);
             // Set a user-friendly error message
-            setError(err.message || 'Failed to send reset link. Please try again.');
+            setError(err instanceof Error ? err.message : 'Failed to send reset link. Please try again.');
         } finally {
             setLoading(false); // Reset loading state regardless of outcome
         }
@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
                         Forgot Your Password?
                     </h1>
                     <p className="mt-2 text-sm text-gray-600">
-                        No worries! Enter your email below and we'll send you a link to reset it.
+                        No worries! Enter your email below and we&#39;ll send you a link to reset it.
                     </p>
                 </div>
 

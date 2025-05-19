@@ -14,7 +14,7 @@ export async function PATCH(request: Request) { // Or POST
 
     try {
         const { username } = await request.json();
-        // @ts-ignore
+        // @ts-expect-error - NextAuth session type doesn't include id in user property but our custom session does
         const userId = session.user.id;
 
         if (!username || username.trim().length < 3) {
@@ -35,11 +35,12 @@ export async function PATCH(request: Request) { // Or POST
 
         return NextResponse.json({ message: "Username updated successfully.", user: { username: updatedUser.username } }, { status: 200 });
 
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
         console.error("Update username error:", error);
-        if (error.code === 11000) { // MongoDB duplicate key error
+        if (error && typeof error === 'object' && 'code' in error && error.code === 11000) { // MongoDB duplicate key error
             return NextResponse.json({ message: "Username already taken." }, { status: 409 });
         }
-        return NextResponse.json({ message: "Error updating username.", error: error.message }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        return NextResponse.json({ message: "Error updating username.", error: errorMessage }, { status: 500 });
     }
 }

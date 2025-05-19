@@ -1,4 +1,3 @@
-
 // /app/api/auth/login/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -67,7 +66,7 @@ export async function POST(req: NextRequest) {
         // Successful login - create user data without password
         console.log(`Login successful for user: ${email}`);
         const userData = {
-            id: user._id.toString(),
+            id: (user._id as unknown as string).toString(),
             email: user.email,
             username: user.username,
         };
@@ -85,7 +84,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ 
             success: false, 
             message: 'Authentication failed',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : undefined) : undefined
         }, { status: 500 });
     }
 }

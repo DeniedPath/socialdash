@@ -53,9 +53,9 @@ export default function SignupPage() {
             console.log('Signup successful:', data);
             router.push('/login');
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Signup error:', err);
-            setError(err.message || 'An error occurred during signup');
+            setError(err instanceof Error ? err.message : 'An error occurred during signup');
         } finally {
             setLoading(false);
         }
