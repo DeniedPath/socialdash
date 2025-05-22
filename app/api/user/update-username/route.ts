@@ -1,6 +1,6 @@
 // Example: /app/api/user/update-username/route.ts
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path
+import { authOptions } from "@/lib/authOptions"; // Import from lib directory
 import dbConnect from "@/lib/mongoose"; // Adjust path
 import User from "@/app/models/User"; // Adjust path
 import { NextResponse } from 'next/server';
@@ -13,9 +13,7 @@ export async function PATCH(request: Request) { // Or POST
     }
 
     try {
-        const { username } = await request.json();
-        // @ts-expect-error - NextAuth session type doesn't include id in user property but our custom session does
-        const userId = session.user.id;
+        const { username } = await request.json();        const userId = session.user.id;
 
         if (!username || username.trim().length < 3) {
             return NextResponse.json({ message: "Username must be at least 3 characters long." }, { status: 400 });

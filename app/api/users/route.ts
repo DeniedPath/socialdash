@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongoose';
-import User from '@/lib/models/User'
+import User from '@/app/models/User'
 
 export async function GET() {
   try {

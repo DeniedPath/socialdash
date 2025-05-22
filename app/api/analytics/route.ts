@@ -1,8 +1,8 @@
-// /app/api/analytics/[platform]/route.ts
+// /app/api/analytics/route.ts (or your chosen new static path)
 
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path to your NextAuth options
-import { NextResponse } from 'next/server';
+import { authOptions } from "@/lib/authOptions"; // Adjust path to your NextAuth options
+import { NextResponse, NextRequest } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises'; // Using promises version of fs for async/await
 
@@ -31,14 +31,7 @@ interface MockAnalyticsFile {
     // Add other platforms as needed
 }
 
-// Helper function to get an icon component by name (illustrative)
-// In a real scenario, you might not pass icon components directly in API responses.
-// Instead, pass an icon identifier (string) and map it to the component on the client-side.
-// For simplicity in the mock, we are not doing that here, but the client-side already handles it.
-
 async function getMockData(): Promise<MockAnalyticsFile> {
-    // Construct the path to your data file in the `lib` folder
-    // Note: process.cwd() gives the root of your Next.js project
     const dataFilePath = path.join(process.cwd(), 'lib', 'mockAnalyticsData.json');
 
     try {
@@ -46,30 +39,26 @@ async function getMockData(): Promise<MockAnalyticsFile> {
         return JSON.parse(jsonData) as MockAnalyticsFile;
     } catch (error) {
         console.error("Error reading or parsing mockAnalyticsData.json:", error);
-        // Return an empty structure or throw error if the file is critical
         return {
             youtube: { stats: {}, timeSeriesData: [], trafficSources: [], recentActivity: [], topContent: [] },
             twitter: { stats: {}, timeSeriesData: [], trafficSources: [], recentActivity: [], topContent: [] },
+            instagram: { stats: {}, timeSeriesData: [], trafficSources: [], recentActivity: [], topContent: [] },
         };
     }
 }
 
-
-export async function GET(
-    request: Request,
-    { params }: { params: { platform: string } }
-) {
+export async function GET(request: NextRequest) { // Removed { params }
     // 1. Authenticate the user
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
+    if (!session?.user) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Get the platform from the dynamic route parameter
-    const platform = params.platform;
+    // 2. Get the platform from the query parameters
+    const platform = request.nextUrl.searchParams.get('platform');
 
     if (!platform) {
-        return NextResponse.json({ message: "Platform parameter is missing" }, { status: 400 });
+        return NextResponse.json({ message: "Platform query parameter is missing" }, { status: 400 });
     }
 
     console.log(`API: Received request for platform: ${platform}`);
@@ -100,22 +89,15 @@ export async function GET(
             return NextResponse.json({ message: `No data configured for platform '${platform}'.` }, { status: 404 });
         }
 
-        // 5. Format the data to match what the frontend dashboard page expects
-        // The frontend DashboardPage's fetchPlatformData function expects a structure like:
-        // { youtubeStats: { ... }, youtubeTimeSeriesData: [ ... ], ... }
-        // So, we'll wrap the platformData accordingly.
-
+        // 5. Format the data
         const responseData = {
             [`${platform.toLowerCase()}Stats`]: platformData.stats || {},
             [`${platform.toLowerCase()}TimeSeriesData`]: platformData.timeSeriesData || [],
             [`${platform.toLowerCase()}TrafficSources`]: platformData.trafficSources || [],
             [`${platform.toLowerCase()}RecentActivity`]: platformData.recentActivity || [],
-            [`${platform.toLowerCase()}TopVideos`]: platformData.topContent || [], // Assuming 'TopVideos' for youtube
-            [`${platform.toLowerCase()}TopContent`]: platformData.topContent || [], // Generic for others
+            [`${platform.toLowerCase()}TopVideos`]: platformData.topContent || [],
+            [`${platform.toLowerCase()}TopContent`]: platformData.topContent || [],
         };
-
-        // Simulate a network delay (optional, for testing loading states)
-        // await new Promise(resolve => setTimeout(resolve, 1000));
 
         return NextResponse.json(responseData, { status: 200 });
 
@@ -123,4 +105,6 @@ export async function GET(
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         return NextResponse.json({ message: "Internal Server Error", error: errorMessage }, { status: 500 });
     }
+    // The last 'return new Response('OK');' was unreachable and likely a leftover, so I've removed it.
+    // If you need a default return outside the try-catch for some reason, ensure it's placed correctly.
 }

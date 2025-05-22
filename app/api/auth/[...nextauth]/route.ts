@@ -16,8 +16,6 @@ import bcrypt from 'bcryptjs'; // For password comparison
 import User from '@/app/models/User'; // Adjust path to your User model
 
 // Define a custom User type for NextAuth that aligns with your IUser
-// NextAuth's User type expects 'id', 'name', 'email', 'image' (optional)
-// We'll map your IUser to this.
 interface NextAuthCustomUser extends NextAuthUser {
     id: string; // This will be user._id.toString()
     username?: string; // From your IUser model
@@ -33,7 +31,8 @@ interface CustomSessionUser {
     image?: string;
 }
 
-export const authOptions: NextAuthOptions = {
+// Make authOptions a local constant, not an export from this route file.
+const authOptions: NextAuthOptions = {
     providers: [
         GithubProvider({
             clientId: process.env.GITHUB_ID as string,
@@ -63,7 +62,7 @@ export const authOptions: NextAuthOptions = {
                     // Find the user in MongoDB by email.
                     // Your UserSchema has `password` with `select: false`,
                     // so you need to explicitly select it for password comparison.
-                    const userFromDb = await User.findOne({ email: credentials.email.toLowerCase() }).select('+password');
+                    const userFromDb = await User.findOne({ email: credentials.email.toLowerCase() }).select('+password') as import('@/app/models/User').IUser & { _id: import('mongoose').Types.ObjectId, password?: string };
 
                     if (!userFromDb) {
                         console.warn("Authorize: User not found with email:", credentials.email);
@@ -86,7 +85,7 @@ export const authOptions: NextAuthOptions = {
                         // If authentication is successful, return a user object for NextAuth.
                         // This object is then passed to the `jwt` callback.
                         return {
-                            id: (userFromDb._id as unknown as string).toString(), // MongoDB _id needs to be converted to string
+                            id: userFromDb._id.toString(), // MongoDB _id needs to be converted to string
                             name: userFromDb.username, // Using username as 'name' for NextAuth session
                             email: userFromDb.email,
                             username: userFromDb.username, // You can add custom fields
@@ -98,7 +97,6 @@ export const authOptions: NextAuthOptions = {
                     }
                 } catch (error) {
                     console.error("Authorize Error:", error);
-                    // throw new Error("An error occurred during authentication."); // Or return null
                     return null;
                 }
             }
@@ -116,7 +114,7 @@ export const authOptions: NextAuthOptions = {
             if (user) {
                 const customUser = user as NextAuthCustomUser;
                 token.id = customUser.id;
-                token.username = customUser.username; // Persist username to token
+                token.username = customUser.username ?? ""; // Persist username to token, ensure string
                 // token.name will be set from user.name (which we mapped to username)
                 // token.email will be set from user.email
                 // token.picture will be set from user.image (if available)

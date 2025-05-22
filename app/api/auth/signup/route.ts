@@ -27,20 +27,21 @@ export async function POST(request: NextRequest) {
                 { success: false, message: 'Please provide all required fields: username, email, and password' },
                 { status: 400 }
             );
-        }
+        }        // Type assertions after validation
+        const usernameStr = username as string;
+        const emailStr = email as string;
+        const passwordStr = password as string;
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
+        if (!emailRegex.test(emailStr)) {
             console.log("Signup validation failed: Invalid email format");
             return NextResponse.json(
                 { success: false, message: 'Please provide a valid email address' },
                 { status: 400 }
             );
-        }
-
-        // Validate password strength
-        if (password.length < 6) {
+        }        // Validate password strength
+        if (passwordStr.length < 6) {
             console.log("Signup validation failed: Password too short");
             return NextResponse.json(
                 { success: false, message: 'Password must be at least 6 characters long' },
@@ -49,9 +50,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if user already exists
-        console.log("Checking if user already exists...");
-        const existingUser = await User.findOne({
-            $or: [{ email }, { username }]
+        console.log("Checking if user already exists...");        const existingUser = await User.findOne({
+            $or: [{ email: emailStr }, { username: usernameStr }]
         });
 
         if (existingUser) {
@@ -60,18 +60,15 @@ export async function POST(request: NextRequest) {
                 { success: false, message: 'User with that email or username already exists' },
                 { status: 409 }
             );
-        }
-
-        // Hash the password with bcrypt before storing
+        }        // Hash the password with bcrypt before storing
         console.log("Hashing password...");
         const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        const hashedPassword = await bcrypt.hash(passwordStr, saltRounds);
         
-        console.log("Creating new user...");
-        // Create new user with the hashed password
+        console.log("Creating new user...");        // Create new user with the hashed password
         const newUser = new User({
-            username,
-            email,
+            username: usernameStr,
+            email: emailStr,
             password: hashedPassword
         });
         

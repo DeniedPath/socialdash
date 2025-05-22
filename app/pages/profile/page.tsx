@@ -35,36 +35,29 @@ export default function ProfilePage() {
         if (status === 'loading') return;
         if (!session) {
             router.push(`/login?callbackUrl=${pathname}`);
-        } else if (session?.user) {
-            // Initialize editableUsername and displayName from the session.
+        } else if (session?.user) {            // Initialize editableUsername and displayName from the session.
             // Your NextAuth callbacks should ensure 'username' is part of session.user
-            // @ts-expect-error - Handling unknown session structure in password change flow
-            const currentUsername = session.user.username || session.user.name || "";
-            setEditableUsername(currentUsername);
-            setDisplayName(currentUsername || 'User Profile');
+            const username = session.user.username || session.user.name || "";
+            setEditableUsername(username);
+            setDisplayName(username || 'User Profile');
         }
     }, [session, status, router, pathname, session?.user]); // Initial load and when session object itself changes
 
     // Effect to update displayName whenever session.user.name or session.user.username changes
     useEffect(() => {
-        if (session?.user) {
-            // @ts-expect-error - Handling unknown error structure that might not match TypeScript definitions
-            const newDisplayName = session.user.username || session.user.name || 'User Profile';
+        if (session?.user) {            const newDisplayName = session.user.username || session.user.name || 'User Profile';
             setDisplayName(newDisplayName);
         }
     }, [session?.user, session?.user?.name]); // Updated to remove session?.data
 
     const handleEditProfileToggle = () => {
         if (isEditMode) {
-            // If canceling edit mode, reset username to original session username
-            // @ts-expect-error - Handling possible unexpected API response structure
-            setEditableUsername(session?.user.username || session?.user.name || "");
+            // If canceling edit mode, reset username to original session username            setEditableUsername(session?.user?.username || session?.user?.name || "");
             setProfileUpdateError("");
             setProfileUpdateSuccess("");
         } else {
             // Entering edit mode
-            // @ts-expect-error - Handling unknown session structure that might not match TypeScript definitions
-            setEditableUsername(session?.user.username || session?.user.name || "");
+            setEditableUsername(session?.user?.username || session?.user?.name || "");
         }
         setIsEditMode(!isEditMode);
     };

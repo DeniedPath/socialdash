@@ -48,12 +48,9 @@ async function dbConnect() {
   return cached.conn;
 }
 // eslint-disable-next-line
-const connectToDatabase = async (): Promise<void> => {
+const connectToDatabase = async (): Promise<typeof mongoose> => {
     try {
-        // Example: Replace 'any' with 'unknown' or specific types
-        const connection: unknown = await mongoose.connect(process.env.MONGO_URI!);
-       
-        return connection;
+        return await mongoose.connect(process.env.MONGO_URI!);
     } catch (error: unknown) {
         console.error('Database connection error:', error);
         throw error;
