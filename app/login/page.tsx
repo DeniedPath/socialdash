@@ -1,10 +1,17 @@
 // /app/login/page.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { signIn, useSession } from "next-auth/react"; // Import signIn and useSession
-import { useRouter, useSearchParams } from 'next/navigation'; // Import useRouter and useSearchParams
+import { signIn, useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from 'next/navigation';
+
+// Component to handle search params
+function LoginContent() {
+    const searchParams = useSearchParams();
+    const callbackUrl = searchParams?.get('callbackUrl') || '/pages/dashboard';
+    return <LoginForm callbackUrl={callbackUrl} />;
+}
 
 /**
  * LoginPage Component
@@ -12,6 +19,17 @@ import { useRouter, useSearchParams } from 'next/navigation'; // Import useRoute
  * and NextAuth.js integration.
  */
 export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 font-sans">
+            <p className="text-gray-700 text-lg">Loading...</p>
+        </div>}>
+            <LoginContent />
+        </Suspense>
+    );
+}
+
+// Main login form component
+function LoginForm({ callbackUrl }: { callbackUrl: string }) {
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
 
@@ -19,14 +37,8 @@ export default function LoginPage() {
     const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
     // State for NextAuth.js related errors (e.g., "Invalid credentials")
     const [authError, setAuthError] = useState<string>('');
-    const [loading, setLoading] = useState<boolean>(false);
-
-    const router = useRouter();
-    const searchParams = useSearchParams();
+    const [loading, setLoading] = useState<boolean>(false);    const router = useRouter();
     const { status } = useSession();
-
-    // Get callbackUrl from query parameters or default to dashboard
-    const callbackUrl = searchParams?.get('callbackUrl') || '/pages/dashboard';
 
     // Effect to handle redirection if user is already authenticated
     useEffect(() => {
