@@ -133,18 +133,27 @@ export async function PUT(request: Request) {
             })) as Prisma.InputJsonValue[]
             : [];
 
-        // Create or update analytics for the user
+        // Create or update analytics for the user        // Get or create a default platform
+        const defaultPlatform = await prisma.platform.upsert({
+            where: { name: 'Default' },
+            update: {},
+            create: {
+                name: 'Default',
+                apiKey: 'default_key',
+                apiSecret: 'default_secret'
+            }
+        });
+
         const analytics = await prisma.analytics.create({
             data: {
                 userId: session.user.id,
+                platformId: defaultPlatform.id,
                 subscriberCount: subscribers || 0,
                 viewCount: views || 0,
                 videoCount: videos || 0,
                 timeSeriesData: formattedTimeSeriesData,
                 trafficSources: formattedTrafficSources,
-                pageViews: 0,
-                engagement: 0,
-                followers: 0
+                engagement: 0.0
             }
         });
 

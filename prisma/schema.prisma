@@ -29,21 +29,27 @@ model User {
 }
 
 model Analytics {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  subscriberCount Int     @default(0)
-  viewCount     Int       @default(0)
-  videoCount    Int       @default(0)
-  pageViews     Int       @default(0)
-  engagement    Float     @default(0)
-  followers     Int       @default(0)
-  timeSeriesData Json[]   @default([])
-  trafficSources Json[]   @default([])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id])
+  platformId          String
+  platform            Platform  @relation(fields: [platformId], references: [id])
+  subscriberCount     Int       @default(0)
+  viewCount          Int       @default(0)
+  videoCount         Int       @default(0)
+  likeCount          Int       @default(0)
+  engagement         Float     @default(0)
+  subscriberChange   String?
+  subscriberChangeType String?
+  timeSeriesData     Json[]   @default([])
+  trafficSources     Json[]   @default([])
+  recentActivity     Json[]   @default([])
+  topContent         Json[]   @default([])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([userId])
+  @@index([platformId])
 }
 
 model Notification {
@@ -64,6 +70,7 @@ model Platform {
   apiKey        String?
   apiSecret     String?
   createdAt     DateTime       @default(now())
+  analytics     Analytics[]
   posts         Post[]
   socialAccounts SocialAccount[]
 }

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
+import { createMockDataForUser } from '@/lib/mockData';
 
 export async function POST(request: NextRequest) {
     console.log("Starting signup process...");
@@ -72,8 +73,7 @@ export async function POST(request: NextRequest) {
         console.log("Hashing password...");
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(passwordStr, saltRounds);
-        
-        console.log("Creating new user...");
+          console.log("Creating new user...");
         // Create new user with Prisma
         const newUser = await prisma.user.create({
             data: {
@@ -81,7 +81,13 @@ export async function POST(request: NextRequest) {
                 email: emailStr,
                 password: hashedPassword
             }
-        });        console.log("User created successfully with ID:", newUser.id);        // Exclude password from the response
+        });
+        
+        // Create mock analytics data for the new user
+        await createMockDataForUser(newUser.id);
+        
+        console.log("User created successfully with ID:", newUser.id);
+        // Exclude password from the response
         const { password: _password, ...userWithoutPassword } = newUser;
 
         return NextResponse.json(

@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
+import { createMockDataForUser } from '@/lib/mockData';
 
 export async function POST(req: NextRequest) {
     console.log("Starting login process...");
@@ -59,9 +60,18 @@ export async function POST(req: NextRequest) {
                 success: false, 
                 message: 'Invalid email or password' 
             }, { status: 401 });
+        }        // Check if user has any analytics data
+        const hasAnalytics = await prisma.analytics.findFirst({
+            where: { userId: user.id }
+        });
+
+        // If no analytics data exists, create mock data
+        if (!hasAnalytics) {
+            await createMockDataForUser(user.id);
         }
 
-        // Successful login - create user data without password        console.log(`Login successful for user: ${email}`);
+        // Successful login - create user data without password
+        console.log(`Login successful for user: ${email}`);
         const userData = {
             id: user.id,
             email: user.email,

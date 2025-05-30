@@ -2,13 +2,11 @@
   "name": "socialdash",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
+  "scripts": {    "dev": "next dev --turbopack",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit",
-    "db:seed": "tsx prisma/seed.ts"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
