@@ -1,5 +1,4 @@
-import { connectToDatabase } from '@/lib/db';
-import User from '@/app/models/User';
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
 
@@ -7,9 +6,6 @@ export async function POST(request: NextRequest) {
     console.log("Starting signup process...");
     
     try {
-        // Connect to the database
-        await connectToDatabase();
-
         // Parse the request body
         const body: Record<string, unknown> = await request.json();
         console.log("Signup request received:", {
@@ -27,7 +23,9 @@ export async function POST(request: NextRequest) {
                 { success: false, message: 'Please provide all required fields: username, email, and password' },
                 { status: 400 }
             );
-        }        // Type assertions after validation
+        }
+
+        // Type assertions after validation
         const usernameStr = username as string;
         const emailStr = email as string;
         const passwordStr = password as string;
@@ -40,7 +38,9 @@ export async function POST(request: NextRequest) {
                 { success: false, message: 'Please provide a valid email address' },
                 { status: 400 }
             );
-        }        // Validate password strength
+        }
+
+        // Validate password strength
         if (passwordStr.length < 6) {
             console.log("Signup validation failed: Password too short");
             return NextResponse.json(
@@ -50,8 +50,14 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if user already exists
-        console.log("Checking if user already exists...");        const existingUser = await User.findOne({
-            $or: [{ email: emailStr }, { username: usernameStr }]
+        console.log("Checking if user already exists...");
+        const existingUser = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email: emailStr },
+                    { username: usernameStr }
+                ]
+            }
         });
 
         if (existingUser) {
@@ -60,29 +66,23 @@ export async function POST(request: NextRequest) {
                 { success: false, message: 'User with that email or username already exists' },
                 { status: 409 }
             );
-        }        // Hash the password with bcrypt before storing
+        }
+
+        // Hash the password with bcrypt before storing
         console.log("Hashing password...");
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(passwordStr, saltRounds);
         
-        console.log("Creating new user...");        // Create new user with the hashed password
-        const newUser = new User({
-            username: usernameStr,
-            email: emailStr,
-            password: hashedPassword
-        });
-        
-        // Save the user to database
-        const savedUser = await newUser.save();
-        console.log("User created successfully with ID:", savedUser._id);
-
-        // Exclude password from the response
-        const userWithoutPassword = {
-            _id: savedUser._id,
-            username: savedUser.username,
-            email: savedUser.email,
-            createdAt: savedUser.createdAt
-        };
+        console.log("Creating new user...");
+        // Create new user with Prisma
+        const newUser = await prisma.user.create({
+            data: {
+                username: usernameStr,
+                email: emailStr,
+                password: hashedPassword
+            }
+        });        console.log("User created successfully with ID:", newUser.id);        // Exclude password from the response
+        const { password: _password, ...userWithoutPassword } = newUser;
 
         return NextResponse.json(
             {
@@ -94,10 +94,8 @@ export async function POST(request: NextRequest) {
         );
 
     } catch (error) {
-        console.error('Signup error:', error);
-
-        // MongoDB duplicate key error
-        if ((error as { code?: number }).code === 11000) { // Replace `any` with a specific type
+        console.error('Signup error:', error);        // Prisma unique constraint violation
+        if (error instanceof Error && 'code' in error && error.code === 'P2002') {
             return NextResponse.json(
                 { 
                     success: false, 

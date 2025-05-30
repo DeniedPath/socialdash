@@ -1,14 +1,12 @@
-import { NextResponse } from 'next/server'
-import dbConnect from '@/lib/mongoose';
-import User from '@/app/models/User'
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    await dbConnect()
-    const count = await User.countDocuments()
-    return NextResponse.json({ count })
+    const count = await prisma.user.count();
+    return NextResponse.json({ count });
   } catch (error) {
-    console.error('Error counting users:', error)
-    return new NextResponse('Failed to fetch user count', { status: 500 })
+    console.error('Error counting users:', error);
+    return new NextResponse('Failed to fetch user count', { status: 500 });
   }
 }

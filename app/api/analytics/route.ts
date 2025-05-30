@@ -1,110 +1,159 @@
-// /app/api/analytics/route.ts (or your chosen new static path)
-
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/authOptions"; // Adjust path to your NextAuth options
-import { NextResponse, NextRequest } from 'next/server';
-import path from 'path';
-import fs from 'fs/promises'; // Using promises version of fs for async/await
+import { authOptions } from "@/lib/authOptions";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import type { AggregatedAnalytics } from '@/lib/types/analytics';
+import type { Prisma } from '@prisma/client';
 
-// Define the expected structure of your mock data file
-// This should align with what your frontend dashboard page expects
-interface PlatformAnalyticsData {
-    stats?: { // Corresponds to what setStatsData expects
-        subscriberCount?: string;
-        viewCount?: string;
-        videoCount?: string;
-        likeCount?: string; // Example for other platforms
-        followerCount?: string; // Example for other platforms
-        subscriberChange?: string;
-        subscriberChangeType?: 'positive' | 'negative';
-    };
-    timeSeriesData?: Array<{ name: string; [key: string]: number | string }>; // For LineChart
-    trafficSources?: Array<{ name: string; value: number; color: string }>; // For PieChart
-    recentActivity?: Array<{ id: string | number; type: string; content: string; time: string; iconName: string }>; // Store icon name, resolve to component on client
-    topContent?: Array<{ id: string | number; title: string; views: string; engagementRate: string }>;
-}
+type AnalyticsDataPoint = {
+    date: string;
+    subscribers: number;
+    views: number;
+    likes: number;
+};
 
-interface MockAnalyticsFile {
-    youtube?: PlatformAnalyticsData;
-    twitter?: PlatformAnalyticsData;
-    instagram?: PlatformAnalyticsData;
-    // Add other platforms as needed
-}
+type TrafficSourcePoint = {
+    name: string;
+    value: number;
+    color: string;
+};
 
-async function getMockData(): Promise<MockAnalyticsFile> {
-    const dataFilePath = path.join(process.cwd(), 'lib', 'mockAnalyticsData.json');
-
-    try {
-        const jsonData = await fs.readFile(dataFilePath, 'utf-8');
-        return JSON.parse(jsonData) as MockAnalyticsFile;
-    } catch (error) {
-        console.error("Error reading or parsing mockAnalyticsData.json:", error);
-        return {
-            youtube: { stats: {}, timeSeriesData: [], trafficSources: [], recentActivity: [], topContent: [] },
-            twitter: { stats: {}, timeSeriesData: [], trafficSources: [], recentActivity: [], topContent: [] },
-            instagram: { stats: {}, timeSeriesData: [], trafficSources: [], recentActivity: [], topContent: [] },
-        };
-    }
-}
-
-export async function GET(request: NextRequest) { // Removed { params }
-    // 1. Authenticate the user
+export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Get the platform from the query parameters
-    const platform = request.nextUrl.searchParams.get('platform');
-
-    if (!platform) {
-        return NextResponse.json({ message: "Platform query parameter is missing" }, { status: 400 });
-    }
-
-    console.log(`API: Received request for platform: ${platform}`);
-
     try {
-        // 3. Load your mock data
-        const mockData = await getMockData();
+        // Get analytics for the user across all platforms
+        const userAnalytics = await prisma.analytics.findMany({
+            where: {
+                userId: session.user.id
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            take: 7
+        });
 
-        let platformData: PlatformAnalyticsData | undefined;
-
-        // 4. Select data based on the platform
-        switch (platform.toLowerCase()) {
-            case 'youtube':
-                platformData = mockData.youtube;
-                break;
-            case 'twitter':
-                platformData = mockData.twitter;
-                break;
-            case 'instagram':
-                platformData = mockData.instagram;
-                break;
-            // Add cases for other platforms you support
-            default:
-                return NextResponse.json({ message: `Analytics data for platform '${platform}' not found.` }, { status: 404 });
-        }
-
-        if (!platformData) {
-            return NextResponse.json({ message: `No data configured for platform '${platform}'.` }, { status: 404 });
-        }
-
-        // 5. Format the data
-        const responseData = {
-            [`${platform.toLowerCase()}Stats`]: platformData.stats || {},
-            [`${platform.toLowerCase()}TimeSeriesData`]: platformData.timeSeriesData || [],
-            [`${platform.toLowerCase()}TrafficSources`]: platformData.trafficSources || [],
-            [`${platform.toLowerCase()}RecentActivity`]: platformData.recentActivity || [],
-            [`${platform.toLowerCase()}TopVideos`]: platformData.topContent || [],
-            [`${platform.toLowerCase()}TopContent`]: platformData.topContent || [],
+        // Initialize aggregated stats with the structure expected by the frontend
+        const aggregatedStats: AggregatedAnalytics = {
+            stats: {
+                subscriberCount: 0,
+                viewCount: 0,
+                videoCount: 0
+            },
+            timeSeriesData: Array.from({ length: 7 }, (_, i) => {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                return {
+                    name: date.toISOString().split('T')[0],
+                    subscribers: 0,
+                    views: 0,
+                    likes: 0
+                };
+            }).reverse(),
+            platformDistribution: []
         };
 
-        return NextResponse.json(responseData, { status: 200 });
+        if (userAnalytics.length > 0) {
+            // Get the most recent analytics entry for the overall stats
+            const latestAnalytics = userAnalytics[0];
+            aggregatedStats.stats = {
+                subscriberCount: latestAnalytics.subscriberCount || 0,
+                viewCount: latestAnalytics.viewCount || 0,
+                videoCount: latestAnalytics.videoCount || 0
+            };
 
+            // Map time series data from stored JSON with proper type checks
+            try {
+                const timeSeriesData = JSON.parse(JSON.stringify(latestAnalytics.timeSeriesData)) as AnalyticsDataPoint[];
+                if (Array.isArray(timeSeriesData) && timeSeriesData.length > 0) {
+                    aggregatedStats.timeSeriesData = timeSeriesData.map(data => ({
+                        name: data.date || 'Unknown',
+                        subscribers: data.subscribers || 0,
+                        views: data.views || 0,
+                        likes: data.likes || 0
+                    }));
+                }
+            } catch (e) {
+                console.warn('Error parsing timeSeriesData:', e);
+            }
+
+            // Map traffic sources from stored JSON with proper type checks
+            try {
+                const trafficSources = JSON.parse(JSON.stringify(latestAnalytics.trafficSources)) as TrafficSourcePoint[];
+                if (Array.isArray(trafficSources) && trafficSources.length > 0) {
+                    aggregatedStats.platformDistribution = trafficSources.map(source => ({
+                        name: source.name || 'Unknown',
+                        value: source.value || 0,
+                        color: source.color || '#808080'
+                    }));
+                }
+            } catch (e) {
+                console.warn('Error parsing trafficSources:', e);
+            }
+        }
+
+        return NextResponse.json(aggregatedStats);
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        return NextResponse.json({ message: "Internal Server Error", error: errorMessage }, { status: 500 });
+        console.error('Error fetching analytics:', error);
+        return NextResponse.json(
+            { message: "Error fetching analytics" },
+            { status: 500 }
+        );
     }
-    // The last 'return new Response('OK');' was unreachable and likely a leftover, so I've removed it.
-    // If you need a default return outside the try-catch for some reason, ensure it's placed correctly.
+}
+
+export async function PUT(request: Request) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        const body = await request.json();
+        const { subscribers, views, videos, timeSeriesData, trafficSources } = body;
+
+        // Validate and transform input data
+        const formattedTimeSeriesData = Array.isArray(timeSeriesData) 
+            ? timeSeriesData.map(item => ({
+                date: String(item.date || ''),
+                subscribers: Number(item.subscribers || 0),
+                views: Number(item.views || 0),
+                likes: Number(item.likes || 0)
+            })) as Prisma.InputJsonValue[]
+            : [];
+
+        const formattedTrafficSources = Array.isArray(trafficSources)
+            ? trafficSources.map(item => ({
+                name: String(item.name || ''),
+                value: Number(item.value || 0),
+                color: String(item.color || '#808080')
+            })) as Prisma.InputJsonValue[]
+            : [];
+
+        // Create or update analytics for the user
+        const analytics = await prisma.analytics.create({
+            data: {
+                userId: session.user.id,
+                subscriberCount: subscribers || 0,
+                viewCount: views || 0,
+                videoCount: videos || 0,
+                timeSeriesData: formattedTimeSeriesData,
+                trafficSources: formattedTrafficSources,
+                pageViews: 0,
+                engagement: 0,
+                followers: 0
+            }
+        });
+
+        return NextResponse.json(analytics);
+    } catch (error) {
+        console.error('Error updating analytics:', error);
+        return NextResponse.json(
+            { error: 'Failed to update analytics' },
+            { status: 500 }
+        );
+    }
 }

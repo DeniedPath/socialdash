@@ -1,11 +1,10 @@
 // Example: /app/api/user/update-username/route.ts
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/authOptions"; // Import from lib directory
-import dbConnect from "@/lib/mongoose"; // Adjust path
-import User from "@/app/models/User"; // Adjust path
+import { authOptions } from "@/lib/authOptions";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from 'next/server';
 
-export async function PATCH(request: Request) { // Or POST
+export async function PATCH(request: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -13,29 +12,23 @@ export async function PATCH(request: Request) { // Or POST
     }
 
     try {
-        const { username } = await request.json();        const userId = session.user.id;
+        const { username } = await request.json();
+        const userId = session.user.id;
 
         if (!username || username.trim().length < 3) {
             return NextResponse.json({ message: "Username must be at least 3 characters long." }, { status: 400 });
         }
 
-        await dbConnect();
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { username }
+        });        // Return updated user data (excluding password)
+        const { ...userWithoutPassword } = updatedUser;
+        return NextResponse.json({ user: userWithoutPassword });
 
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            { username: username.trim() },
-            { new: true, runValidators: true } // runValidators to ensure schema rules are checked
-        );
-
-        if (!updatedUser) {
-            return NextResponse.json({ message: "User not found." }, { status: 404 });
-        }
-
-        return NextResponse.json({ message: "Username updated successfully.", user: { username: updatedUser.username } }, { status: 200 });
-
-    } catch (error: Error | unknown) {
+    } catch (error) {
         console.error("Update username error:", error);
-        if (error && typeof error === 'object' && 'code' in error && error.code === 11000) { // MongoDB duplicate key error
+        if (error instanceof Error && 'code' in error && error.code === 'P2002') { // Prisma unique constraint error
             return NextResponse.json({ message: "Username already taken." }, { status: 409 });
         }
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

@@ -1,17 +1,13 @@
 // /app/api/auth/login/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import User from '@/app/models/User';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 
 export async function POST(req: NextRequest) {
     console.log("Starting login process...");
     
     try {
-        // Connect to database
-        await connectToDatabase();
-        
         // Parse the request body
         const body = await req.json();
         const { email, password } = body;
@@ -27,9 +23,11 @@ export async function POST(req: NextRequest) {
             }, { status: 400 });
         }
 
-        // Find user by email and explicitly select password field
+        // Find user by email
         console.log(`Looking up user with email: ${email}`);
-        const user = await User.findOne({ email }).select('+password');
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
 
         // If no user found, return generic error (for security)
         if (!user) {
@@ -40,7 +38,7 @@ export async function POST(req: NextRequest) {
             }, { status: 401 });
         }
 
-        console.log(`User found with ID: ${user._id}`);
+        console.log(`User found with ID: ${user.id}`);
         
         // Verify password exists
         if (!user.password) {
@@ -63,10 +61,9 @@ export async function POST(req: NextRequest) {
             }, { status: 401 });
         }
 
-        // Successful login - create user data without password
-        console.log(`Login successful for user: ${email}`);
+        // Successful login - create user data without password        console.log(`Login successful for user: ${email}`);
         const userData = {
-            id: (user._id as unknown as string).toString(),
+            id: user.id,
             email: user.email,
             username: user.username,
         };

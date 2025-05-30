@@ -5,31 +5,64 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from 'next/navigation';
-
-// Import icons from lucide-react
 import {
-    LayoutDashboard, BarChart3, FileText, Users,
-    Settings, TrendingUp, TrendingDown,
+    LayoutDashboard, BarChart3, FileText, Users, Eye,
+    Settings, TrendingUp, TrendingDown, Video,
     PieChart as PieChartIcon, LogOut, Briefcase,
-    ChevronDown, AlertCircle, RefreshCw, CalendarDays, Users2, Heart
+    ChevronDown, AlertCircle, RefreshCw, CalendarDays, Users2
 } from 'lucide-react';
-
-// Import Recharts components
 import {
     ResponsiveContainer, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from 'recharts';
 
-// Define a type for Stat Cards
+// Types
 type AnalyticsStatCardProps = {
     title: string;
     value: string;
     icon: React.ElementType;
-    period?: string; // e.g., "Last 30 days"
+    period?: string;
     trendValue?: string;
     trendDirection?: 'up' | 'down' | 'neutral';
 };
 
+interface FollowerEngagementDataPoint {
+    date: string;
+    followers: number;
+    engagement: string | number;
+}
+
+interface PlatformDistributionDataPoint {
+    name: string;
+    value: number;
+    color: string;
+}
+
+interface OverallTrendDataPoint {
+    month: string;
+    value: number;
+}
+
+interface AnalyticsData {
+    stats?: {
+        subscriberCount: number;
+        viewCount: number;
+        videoCount: number;
+    };
+    timeSeriesData?: Array<{
+        name: string;
+        subscribers: number;
+        views: number;
+        likes: number;
+    }>;
+    trafficSources?: Array<{
+        name: string;
+        value: number;
+        color: string;
+    }>;
+}
+
+// Stat Card Component
 const AnalyticsStatCard: React.FC<AnalyticsStatCardProps> = ({ title, value, icon: Icon, period, trendValue, trendDirection }) => (
     <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
         <div className="flex items-center justify-between mb-2">
@@ -61,48 +94,7 @@ const ChartPlaceholder = ({ message, icon: IconComp = BarChart3, height = "h-ful
     </div>
 );
 
-// Sample data for charts - replace with fetched data
-const sampleFollowerEngagementData: FollowerEngagementDataPoint[] = [
-    { date: '2024-04-01', followers: 1200, engagement: 250 },
-    { date: '2024-04-08', followers: 1250, engagement: 280 },
-    { date: '2024-04-15', followers: 1300, engagement: 260 },
-    { date: '2024-04-22', followers: 1380, engagement: 310 },
-    { date: '2024-04-29', followers: 1450, engagement: 300 },
-];
-
-const samplePlatformDistributionData: PlatformDistributionDataPoint[] = [
-    { name: 'YouTube', value: 45, color: '#FF0000' },
-    { name: 'Twitter/X', value: 30, color: '#1DA1F2' },
-    { name: 'Instagram', value: 25, color: '#E1306C' },
-];
-
-const sampleOverallTrendData: OverallTrendDataPoint[] = [
-    { month: 'Jan', value: 12000 },
-    { month: 'Feb', value: 15000 },
-    { month: 'Mar', value: 13500 },
-    { month: 'Apr', value: 16000 },
-    { month: 'May', value: 18500 },
-    { month: 'Jun', value: 17000 },
-];
-
-// Define missing types
-interface FollowerEngagementDataPoint {
-    date: string;
-    followers: number;
-    engagement: number; // Corrected from engagementRate
-}
-
-interface PlatformDistributionDataPoint {
-    name: string; // Corrected from platform
-    value: number;
-    color: string;
-}
-
-interface OverallTrendDataPoint {
-    month: string; // Corrected from date
-    value: number;
-    metric?: string; // Made optional to match usage
-}
+// Types moved to lib/types/analytics.ts
 
 export default function AnalyticsPage() {
     const { data: session, status } = useSession();
@@ -110,37 +102,16 @@ export default function AnalyticsPage() {
     const pathname = usePathname();
 
     const [selectedPlatform, setSelectedPlatform] = useState<string>('overall');
-    const [dateRange] = useState<string>('last_30_days'); // Placeholder for date range selection
 
-    // Define types for chart data
-    type FollowerEngagementDataPoint = {
-        date: string;
-        followers: number;
-        engagement: number;
-    };
-    
-    type PlatformDistributionDataPoint = {
-        name: string;
-        value: number;
-        color: string;
-    };
-    
-    type OverallTrendDataPoint = {
-        month: string;
-        value: number;
-    };
-    
-    // State for chart data
+    // State
     const [analyticsStats, setAnalyticsStats] = useState<AnalyticsStatCardProps[]>([]);
     const [followerEngagementData, setFollowerEngagementData] = useState<FollowerEngagementDataPoint[]>([]);
     const [platformDistributionData, setPlatformDistributionData] = useState<PlatformDistributionDataPoint[]>([]);
     const [overallTrendData, setOverallTrendData] = useState<OverallTrendDataPoint[]>([]);
-
-
     const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
     const [dataError, setDataError] = useState<string | null>(null);
 
-    // Effect for authentication
+    // Auth Effect
     useEffect(() => {
         if (status === 'loading') return;
         if (!session) {
@@ -148,52 +119,75 @@ export default function AnalyticsPage() {
         }
     }, [session, status, router, pathname]);
 
-    // Memoized fetchAnalyticsData function
-    const fetchAnalyticsData = useCallback(async (): Promise<void> => {
+    // Data Fetching
+    const fetchAnalyticsData = useCallback(async () => {
         if (!session) return;
 
         setIsDataLoading(true);
         setDataError(null);
-        console.log(`Fetching analytics for platform: ${selectedPlatform}, date range: ${dateRange}`);
+        // Clear existing data while loading
+        setAnalyticsStats([]);
+        setFollowerEngagementData([]);
+        setPlatformDistributionData([]);
+        setOverallTrendData([]);
 
         try {
-            // **ACTUAL API CALL TO YOUR BACKEND**
-            // Endpoint like: /api/analytics-detail?platform=${selectedPlatform}&range=${dateRange}
-            // This API would fetch and process data from the specific platform or aggregate if 'overall'.
-            // const response = await fetch(`/api/analytics-detail?platform=${selectedPlatform}&range=${dateRange}`);
-            // if (!response.ok) {
-            //     const errorData = await response.json();
-            //     throw new Error(errorData.message || `Failed to fetch analytics`);
-            // }
-            // const data = await response.json();
+            const response = await fetch(`/api/analytics/${selectedPlatform}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to fetch ${selectedPlatform} analytics`);
+            }
 
-            // Simulate API delay and set sample data
-            await new Promise(resolve => setTimeout(resolve, 1200));
+            const data: AnalyticsData = await response.json();
 
-            // Update state based on fetched data (using sample data for now)
+            // Update stats with null checks
             setAnalyticsStats([
-                { title: 'Total Followers', value: '15.8K', icon: Users2, trendValue: '+500', trendDirection: 'up' },
-                { title: 'Avg. Engagement Rate', value: '4.7%', icon: Heart, trendValue: '-0.2%', trendDirection: 'down' },
-                { title: 'Top Performing Post', value: 'Summer Campaign Launch', icon: TrendingUp, period: 'Last 7 days' },
+                { 
+                    title: 'Total Subscribers', 
+                    value: (data.stats?.subscriberCount ?? 0).toLocaleString(), 
+                    icon: Users2
+                },
+                { 
+                    title: 'Total Views', 
+                    value: (data.stats?.viewCount ?? 0).toLocaleString(), 
+                    icon: Eye 
+                },
+                { 
+                    title: 'Total Videos', 
+                    value: (data.stats?.videoCount ?? 0).toLocaleString(), 
+                    icon: Video
+                },
             ]);
-            setFollowerEngagementData(sampleFollowerEngagementData);
-            setPlatformDistributionData(samplePlatformDistributionData);
-            setOverallTrendData(sampleOverallTrendData);
 
-        } catch (error: unknown) {
+            // Transform time series data with safety checks
+            if (data.timeSeriesData?.length) {
+                setFollowerEngagementData(data.timeSeriesData.map(item => ({
+                    date: item.name || 'Unknown',
+                    followers: item.subscribers || 0,
+                    engagement: item.views ? ((item.likes || 0) / item.views * 100).toFixed(2) : '0.00'
+                })));
+
+                setOverallTrendData(data.timeSeriesData.map(item => ({
+                    month: item.name || 'Unknown',
+                    value: item.views || 0
+                })));
+            }
+
+            // Set traffic sources with null check
+            if (data.trafficSources?.length) {
+                setPlatformDistributionData(data.trafficSources);
+            }
+
+        } catch (error) {
             console.error(`Error fetching analytics data:`, error);
             const errorMessage = error instanceof Error ? error.message : "Could not load analytics data.";
             setDataError(errorMessage);
-            // Clear data on error
-            setAnalyticsStats([]);
-            setFollowerEngagementData([]);
-            setPlatformDistributionData([]);
-            setOverallTrendData([]);
         } finally {
             setIsDataLoading(false);
         }
-    }, [selectedPlatform, dateRange, session]);
+    }, [selectedPlatform, session]);
 
+    // Fetch data effect
     useEffect(() => {
         if (session) {
             fetchAnalyticsData();
