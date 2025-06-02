@@ -9,7 +9,7 @@ import {
     LayoutDashboard, BarChart3, FileText, Users, Eye,
     Settings, TrendingUp, TrendingDown, Video,
     PieChart as PieChartIcon, LogOut, Briefcase,
-    ChevronDown, AlertCircle, RefreshCw, CalendarDays, Users2
+    ChevronDown,  RefreshCw, CalendarDays, Users2
 } from 'lucide-react';
 import {
     ResponsiveContainer, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
     const [platformDistributionData, setPlatformDistributionData] = useState<PlatformDistributionDataPoint[]>([]);
     const [overallTrendData, setOverallTrendData] = useState<OverallTrendDataPoint[]>([]);
     const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
-    const [dataError, setDataError] = useState<string | null>(null);
+
 
     // Auth Effect
     useEffect(() => {
@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
         if (!session) return;
 
         setIsDataLoading(true);
-        setDataError(null);
+        
         // Clear existing data while loading
         setAnalyticsStats([]);
         setFollowerEngagementData([]);
@@ -180,8 +180,7 @@ export default function AnalyticsPage() {
 
         } catch (error) {
             console.error(`Error fetching analytics data:`, error);
-            const errorMessage = error instanceof Error ? error.message : "Could not load analytics data.";
-            setDataError(errorMessage);
+            
         } finally {
             setIsDataLoading(false);
         }
@@ -318,19 +317,6 @@ export default function AnalyticsPage() {
                             No summary statistics available for the selected criteria.
                         </div>
                     )}
-
-                    {dataError && (
-  <div className="mb-8 p-4 bg-red-100 text-red-700 border border-red-300 rounded-lg flex items-center">
-    <AlertCircle className="h-5 w-5 mr-3" />
-    Oops... something went wrong while loading your data. Please try again. 
-    <button 
-      onClick={fetchAnalyticsData} 
-      className="ml-auto text-sm font-medium hover:underline"
-    >
-      Retry
-    </button>
-  </div>
-)}
 
                     {/* Mid-section Charts */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
