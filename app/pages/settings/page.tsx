@@ -126,21 +126,11 @@ export default function SettingsPage() {
   ]);
 };
 
-    const handleDisconnect = async (providerId: string) => {
-        // **True disconnection requires backend logic:**
-        // 1. Call an API endpoint on your backend (e.g., /api/user/disconnect-social).
-        // 2. Backend: Verify user, find the linked account for this provider.
-        // 3. Backend: If possible, revoke the token with the provider's API.
-        // 4. Backend: Remove the account linkage from your database (e.g., from the 'accounts' table if using NextAuth adapter).
-        // 5. Backend: Respond with success/failure.
-        // 6. Frontend: Update UI (e.g., by refetching session or manually updating state).
-        alert(`Disconnecting from ${providerId} - This requires backend implementation to revoke tokens and remove database linkage.`);
-
-        // For now, as a placeholder, we can try to sign out of the specific provider if NextAuth supports it,
-        // or just refresh the session to see if backend changes are reflected.
-        // await signOut({ redirect: false }); // This signs out of the main session
-        // router.refresh(); // Or use updateSession() if you can modify the session data directly
-    };
+    const handleDisconnect = (providerId: string) => {
+  setConnectedAccounts(prev =>
+    prev.filter(acc => acc.provider !== providerId)
+  );
+};
 // eslint-disable-next-line
     const handleSettingsUpdate = (settings: Record<string, unknown>): void => {
         // Example usage of handleSettingsUpdate if needed
