@@ -208,7 +208,7 @@ export default function SettingsPage() {
                             </h2>
                             <p className="text-sm text-slate-500 mb-4">View and update your personal information.</p>
                             <Link
-                                href="/profile" // Corrected profile link
+                                href="/pages/profile" // Corrected profile link
                                 className="inline-flex items-center justify-center px-5 py-2.5 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
                             >
                                 <Edit3 className="h-4 w-4 mr-2" />
