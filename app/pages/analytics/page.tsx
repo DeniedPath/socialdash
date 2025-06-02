@@ -320,11 +320,17 @@ export default function AnalyticsPage() {
                     )}
 
                     {dataError && (
-                        <div className="mb-8 p-4 bg-red-100 text-red-700 border border-red-300 rounded-lg flex items-center">
-                            <AlertCircle className="h-5 w-5 mr-3" /> {dataError}
-                            <button onClick={fetchAnalyticsData} className="ml-auto text-sm font-medium hover:underline">Retry</button>
-                        </div>
-                    )}
+  <div className="mb-8 p-4 bg-red-100 text-red-700 border border-red-300 rounded-lg flex items-center">
+    <AlertCircle className="h-5 w-5 mr-3" />
+    Oops... something went wrong while loading your data. Please try again. 
+    <button 
+      onClick={fetchAnalyticsData} 
+      className="ml-auto text-sm font-medium hover:underline"
+    >
+      Retry
+    </button>
+  </div>
+)}
 
                     {/* Mid-section Charts */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

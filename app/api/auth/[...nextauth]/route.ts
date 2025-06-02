@@ -14,21 +14,6 @@ interface CustomUser extends User {
     username: string;
 }
 
-// --- IMPORTANT: Database Connection ---
-// You need to establish your MongoDB connection here or import a helper that does.
-// For example, if you have a dbConnect utility:
-// import dbConnect from '@/lib/dbConnect'; // Adjust path as needed
-
-// Import your Mongoose User model
-// import User from '@/app/models/User'; // Adjust path to your User model
-
-// Define a custom User type for NextAuth that aligns with your IUser
-// interface NextAuthCustomUser extends NextAuthUser {
-//     id: string; // This will be user._id.toString()
-//     username?: string; // From your IUser model
-//     // Add any other custom properties you want in the token/session
-// }
-
 // Make authOptions a local constant, not an export from this route file.
 const authOptions: NextAuthOptions = {
     providers: [
