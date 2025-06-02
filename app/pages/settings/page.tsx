@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useSession, signIn } from "next-auth/react"; // Import signIn
+import { useSession } from "next-auth/react"; // Import signIn
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -116,21 +116,15 @@ export default function SettingsPage() {
 
 
     const handleConnect = (providerId: string) => {
-        // Scopes are crucial for getting the necessary permissions.
-        // These are examples and need to be adjusted for each provider.
-        const options: { callbackUrl: string; scope?: string } = { callbackUrl: `${window.location.origin}${pathname}` };
+  // Fake username for demo purposes
+  const fakeUsername = `${providerId}_user`;
 
-        if (providerId === 'google') { // For YouTube Data API
-            options.scope = 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
-        }
-        // Add scopes for other providers as needed
-        // if (providerId === 'facebook') options.scope = 'email,public_profile,pages_show_list,read_insights,pages_read_engagement';
-        // if (providerId === 'instagram') options.scope = 'user_profile,user_media,instagram_manage_insights'; // Requires Facebook login
-        // if (providerId === 'linkedin') options.scope = 'r_liteprofile r_emailaddress w_member_social';
-        // if (providerId === 'twitter') options.scope = 'tweet.read users.read offline.access'; // Twitter API v2 scopes
-
-        signIn(providerId, options);
-    };
+  // Update state to show "connected"
+  setConnectedAccounts(prev => [
+    ...prev,
+    { provider: providerId, username: fakeUsername }
+  ]);
+};
 
     const handleDisconnect = async (providerId: string) => {
         // **True disconnection requires backend logic:**
